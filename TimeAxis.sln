@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32228.343
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeAxis.WinForms", "TimeAxis.WinForms\TimeAxis.WinForms.csproj", "{048F93F4-CFEC-4681-B687-EF2FD9C4B284}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeAxisTest", "TimeAxisTest\TimeAxisTest.csproj", "{FAFD6B95-B611-4AEF-9E46-5314262D785D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{048F93F4-CFEC-4681-B687-EF2FD9C4B284}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{048F93F4-CFEC-4681-B687-EF2FD9C4B284}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{048F93F4-CFEC-4681-B687-EF2FD9C4B284}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{048F93F4-CFEC-4681-B687-EF2FD9C4B284}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAFD6B95-B611-4AEF-9E46-5314262D785D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAFD6B95-B611-4AEF-9E46-5314262D785D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAFD6B95-B611-4AEF-9E46-5314262D785D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAFD6B95-B611-4AEF-9E46-5314262D785D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8F798013-B303-4139-B2EC-407406732845}
+	EndGlobalSection
+EndGlobal
