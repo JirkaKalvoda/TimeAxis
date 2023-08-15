@@ -11,7 +11,7 @@ namespace TimeAxis
     {
         public Color Color { get; set; } = Color.DarkGray;
         
-        public int Position { get; set; } = 300;
+        public int Position { get; set; } = 230;
 
         public int Width { get; set; } = 2;
     }

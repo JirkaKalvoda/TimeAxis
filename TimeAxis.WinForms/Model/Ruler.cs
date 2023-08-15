@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace TimeAxis
 {
+    /// <summary>
+    /// 标尺类，分上下2个尺，上排是真正的起止时刻，下排是显示部分的起止时刻
+    /// </summary>
     public class Ruler : Row
     {
+        /// <summary>
+        /// 放大倍数，目前>=1
+        /// </summary>
         public double Scale { get; set; } = 1;
 
         public DateTime Start { get; set; }
@@ -27,13 +33,23 @@ namespace TimeAxis
 
         public FontStyle FontStyle { get; set; } = FontStyle.Bold;
 
+        public Color BackColor { get; set; } = Color.DeepSkyBlue;
+
+        public int UpperHeight
+        {
+            get
+            {
+                return Height / 2;
+            }
+        }
+
         public Ruler()
         {
             Start = DateTime.Today;
             Stop = DateTime.Today.AddDays(1);
             DisplayStart = Start;
             DisplayStop = Stop;
-            Height = 45;
+            Height = 60;
         }
     }
 }

@@ -7,9 +7,12 @@ using System.Threading.Tasks;
 
 namespace TimeAxis
 {
+    /// <summary>
+    /// 游标类，同个对象在上标尺和下标尺分别画1条线
+    /// </summary>
     public class MarkLine
     {
-        public Color Color { get; set; } = Color.LawnGreen;
+        public Color Color { get; set; } = Color.IndianRed;
 
         public DateTime Time { get; set; }
 

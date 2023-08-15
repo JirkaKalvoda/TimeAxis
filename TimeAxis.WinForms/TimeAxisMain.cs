@@ -40,8 +40,6 @@ namespace TimeAxis
         public List<Track> Tracks { get; set; } = new List<Track>();
 
         
-        //EventArgs
-
         #endregion
         
         public TimeAxisMain()
@@ -76,39 +74,82 @@ namespace TimeAxis
         /// </summary>
         private float threshold = 5;
 
-        private List<Segment> allSegments = new List<Segment>();
-
-        private List<int> allRowPositions = new List<int>();
-
+        /// <summary>
+        /// 鼠标悬停的横线对应的行
+        /// </summary>
         private Row hoverRow = null;
-        
+
+        /// <summary>
+        /// 鼠标悬停的横线对应的行的上边纵坐标
+        /// </summary>
         private int aboveHeight = 0;
 
+        /// <summary>
+        /// 上标尺的游标位置（下标尺的游标位置可以通过时间换算）
+        /// </summary>
         internal int MarkLinePosition
         {
             get
             {
-                return TimeToXPosition(MarkLine.Time);
+                return UpperTimeToXPosition(MarkLine.Time);
             }
             set
             {
-                MarkLine.Time = XPositionToTime(value);
+                MarkLine.Time = UpperXPositionToTime(value);
             }
         }
 
-        private int TimeToXPosition(DateTime time)
+        #region 从分割条到垂直滚动条左边之间的区域，横坐标和时间互相转化
+
+        /// <summary>
+        /// 下标尺和轨道的时间转成X坐标
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        private int LowerTimeToXPosition(DateTime time)
         {
             return (int) ((time - Ruler.DisplayStart).TotalSeconds /
-                          (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds *
-                          (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
+                   (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds *
+                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
         }
 
-        private DateTime XPositionToTime(int x)
+        /// <summary>
+        /// 下标尺和轨道的X坐标转成时间
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        private DateTime LowerXPositionToTime(int x)
         {
             return Ruler.DisplayStart.AddSeconds(1d * (x - SplitLine.Position - SplitLine.Width) / 
-                    (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width) *
-                    (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds);
+                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width) *
+                   (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds);
         }
+
+        /// <summary>
+        /// 上标尺的时间转成X坐标
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        private int UpperTimeToXPosition(DateTime time)
+        {
+            return (int) ((time - Ruler.Start).TotalSeconds /
+                   (Ruler.Stop - Ruler.Start).TotalSeconds *
+                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
+        }
+
+        /// <summary>
+        /// 上标尺的X坐标转成时间
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        private DateTime UpperXPositionToTime(int x)
+        {
+            return Ruler.Start.AddSeconds(1d * (x - SplitLine.Position - SplitLine.Width) /
+                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width) *
+                   (Ruler.Stop - Ruler.Start).TotalSeconds);
+        }
+
+        #endregion
 
         #region 画图方法
 
@@ -140,22 +181,26 @@ namespace TimeAxis
 
         private void DrawRuler(Graphics graphics)
         {
+            using (Brush brush = new SolidBrush(Ruler.BackColor))
+            {
+                graphics.FillRectangle(brush, SplitLine.Position, 0, this.Width - SplitLine.Position, Ruler.Height);
+            }
             using (Pen pen = new Pen(BorderColor, BorderWidth))
             {
                 graphics.DrawLine(pen, 0, Ruler.Height, this.Width, Ruler.Height);
+                graphics.DrawLine(pen, 0, Ruler.UpperHeight, this.Width, Ruler.UpperHeight);
             }
             using (Font font = new Font(Ruler.Font, Ruler.FontSize, Ruler.FontStyle))
             using (Brush brush = new SolidBrush(Ruler.FontColor))
-            {
-                graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy hh:mm:ss.fff", DateTimeFormatInfo.InvariantInfo),
-                    font, brush, 20, (Ruler.Height - font.Height) / 2);
+            {   
+                graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo),
+                    font, brush, 15, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight);
             }
             // todo
         }
 
         private void DrawTrack(Graphics graphics)
         {
-            allSegments.Clear();
             if (Ruler.Start >= Ruler.Stop)
             {
                 throw new Exception("Start time should be earlier than stop time.");
@@ -172,9 +217,8 @@ namespace TimeAxis
                         graphics.DrawLine(pen, 0, lineHeight, this.Width, lineHeight);
                         for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                         {
-                            allSegments.Add(Tracks[row].Segments[column]);
-                            int x1 = TimeToXPosition(Tracks[row].Segments[column].Start);
-                            int x2 = TimeToXPosition(Tracks[row].Segments[column].Stop);
+                            int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
+                            int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
                             int y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
                             int y2 = lineHeight;
                             using (Pen segPen = new Pen(Tracks[row].Segments[column].BorderColor, Tracks[row].Segments[column].BorderWidth))
@@ -203,15 +247,30 @@ namespace TimeAxis
             using (Pen pen = new Pen(MarkLine.Color, MarkLine.Width))
             using (Brush brush = new SolidBrush(MarkLine.Color))
             {
-                graphics.DrawLine(pen, MarkLinePosition, 0, MarkLinePosition, this.Height);
+                int x1 = MarkLinePosition;
+                graphics.DrawLine(pen, x1, 0, x1, Ruler.UpperHeight);
                 PointF[] points = new PointF[]
                 {
-                    new PointF(MarkLinePosition, 7),
-                    new PointF(MarkLinePosition - 6, 0), 
-                    new PointF(MarkLinePosition + 5, 0), 
+                    new PointF(x1, Ruler.UpperHeight - 7),
+                    new PointF(x1 - 6, Ruler.UpperHeight), 
+                    new PointF(x1 + 5, Ruler.UpperHeight), 
                 };
                 graphics.DrawPolygon(pen, points);
                 graphics.FillPolygon(brush, points);
+
+                int x2 = LowerTimeToXPosition(MarkLine.Time);
+                if (x2 >= SplitLine.Position + SplitLine.Width)
+                {
+                    graphics.DrawLine(pen, x2, Ruler.UpperHeight + 1, x2, this.Height);
+                    PointF[] points2 = new PointF[]
+                    {
+                        new PointF(x2, Ruler.UpperHeight + 7),
+                        new PointF(x2 - 6, Ruler.UpperHeight + 1),
+                        new PointF(x2 + 5, Ruler.UpperHeight + 1),
+                    };
+                    graphics.DrawPolygon(pen, points2);
+                    graphics.FillPolygon(brush, points2);
+                }
             }
         }
 
@@ -272,9 +331,10 @@ namespace TimeAxis
             }
         }
 
-        private bool IsMouseAtMarkLine(int x)
+        private bool IsMouseAtMarkLine(int x, int y)
         {
-            if (Math.Abs(x - MarkLinePosition) <= threshold)
+            if (y <= Ruler.UpperHeight && Math.Abs(x - MarkLinePosition) <= threshold ||
+                y > Ruler.UpperHeight && Math.Abs(x - LowerTimeToXPosition(MarkLine.Time)) <= threshold)
             {
                 mouseState = MouseState.MarkLine;
                 Cursor = Cursors.SizeWE;
@@ -327,9 +387,16 @@ namespace TimeAxis
             SplitLine.Position = Math.Min(SplitLine.Position, this.Width - vScrollBar.Width - 10);
         }
 
-        private void DragMarkLine(int x)
+        private void DragMarkLine(int x, int y)
         {
-            MarkLinePosition = x;
+            if (y <= Ruler.UpperHeight)
+            {
+                MarkLinePosition = x;
+            }
+            else
+            {
+                MarkLinePosition = UpperTimeToXPosition(LowerXPositionToTime(x));
+            }
             MarkLinePosition = Math.Max(MarkLinePosition, SplitLine.Position + SplitLine.Width);
             MarkLinePosition = Math.Min(MarkLinePosition, this.Width - vScrollBar.Width);
         }
@@ -350,8 +417,8 @@ namespace TimeAxis
                 {
                     for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                     {
-                        int x1 = TimeToXPosition(Tracks[row].Segments[column].Start);
-                        int x2 = TimeToXPosition(Tracks[row].Segments[column].Stop);
+                        int x1 = LowerTimeToXPosition(Tracks[row].Segments[column].Start);
+                        int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
                         if (x >= x1 && x <= x2)
                         {
                             Tracks[row].Segments[column].IsSelected = true;
@@ -373,15 +440,67 @@ namespace TimeAxis
             mouseState = MouseState.ClickData;
         }
 
+
+        private void VertScroll(int delta)
+        {
+            if (delta < 0)
+            {
+                vScrollBar.Value = Math.Min(vScrollBar.Value + vScrollBar.SmallChange, vScrollBar.Maximum - vScrollBar.LargeChange + 1);
+            }
+            else if (delta > 0)
+            {
+                vScrollBar.Value = Math.Max(vScrollBar.Value - vScrollBar.SmallChange, vScrollBar.Minimum);
+            }
+        }
+
+        private void HoriScale(int delta, int x)
+        {
+            if (delta < 0)
+            {
+                Ruler.Scale += 0.25;
+            }
+            else if (delta > 0)
+            {
+                Ruler.Scale = Math.Max(Ruler.Scale - 0.25, 1);
+            }
+            // 防止到原始比例出现误差
+            if (Math.Abs(Ruler.Scale - 1) < 0.01)
+            {
+                Ruler.Scale = 1;
+                Ruler.DisplayStart = Ruler.Start;
+            }
+            DateTime mouseTime = LowerXPositionToTime(x);
+            Ruler.DisplayStart = mouseTime.AddSeconds(-(mouseTime - Ruler.Start).TotalSeconds / Ruler.Scale);
+            Ruler.DisplayStop = mouseTime.AddSeconds((Ruler.Stop - mouseTime).TotalSeconds / Ruler.Scale);
+            Invalidate();
+        }
+
+        private void HoriScroll(int delta)
+        {
+            double deltaSeconds = (Ruler.Stop - Ruler.Start).TotalSeconds / 50;
+            double seconds = (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds;
+            if (delta < 0)
+            {
+                Ruler.DisplayStop = DateTimeExt.Min(Ruler.DisplayStop.AddSeconds(deltaSeconds), Ruler.Stop);
+                Ruler.DisplayStart = Ruler.DisplayStop.AddSeconds(-seconds);
+            }
+            else if (delta > 0)
+            {
+                Ruler.DisplayStart = DateTimeExt.Max(Ruler.DisplayStart.AddSeconds(-deltaSeconds), Ruler.Start);
+                Ruler.DisplayStop = Ruler.DisplayStart.AddSeconds(seconds);
+            }
+            Invalidate();
+        }
         
+
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
             // 避免鼠标拖太快，刷新跟不上，图形不跟随鼠标，所以只在无按键且移动时改变状态
             if (e.Button == MouseButtons.None)
             {
-                // 判断标线
-                if (IsMouseAtMarkLine(e.X))
+                // 判断游标
+                if (IsMouseAtMarkLine(e.X, e.Y))
                 {
                 }
                 // 判断分割线
@@ -403,7 +522,7 @@ namespace TimeAxis
                 switch (mouseState)
                 {
                     case MouseState.MarkLine:
-                        DragMarkLine(e.X);
+                        DragMarkLine(e.X, e.Y);
                         break;
 
                     case MouseState.SplitLine:
@@ -461,14 +580,15 @@ namespace TimeAxis
             base.OnMouseWheel(e);
             if (e.Y > Ruler.Height && keyState == Keys.ShiftKey)
             {
-                if (e.Delta < 0)
-                {
-                    vScrollBar.Value = Math.Min(vScrollBar.Value + vScrollBar.SmallChange, vScrollBar.Maximum - vScrollBar.LargeChange + 1);
-                }
-                else if (e.Delta > 0)
-                {
-                    vScrollBar.Value = Math.Max(vScrollBar.Value - vScrollBar.SmallChange, vScrollBar.Minimum);
-                }
+                VertScroll(e.Delta);
+            }
+            else if (e.X >= SplitLine.Width + SplitLine.Position && keyState == Keys.Menu)
+            {
+                HoriScale(e.Delta, e.X);
+            }
+            else if (e.Y > Ruler.Height && keyState == Keys.None)
+            {
+                HoriScroll(e.Delta);
             }
         }
 
@@ -479,6 +599,11 @@ namespace TimeAxis
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
+            // 按Alt会让菜单栏获取焦点，所以先标记处理过
+            if (e.KeyCode == Keys.Menu)
+            {
+                e.Handled = true;
+            }
             base.OnKeyDown(e);
             switch (e.KeyCode)
             {
@@ -486,6 +611,10 @@ namespace TimeAxis
                 case Keys.ControlKey:
                 case Keys.Menu:     // alt
                     keyState = e.KeyCode;
+                    break;
+
+                default:
+                    keyState = Keys.None;
                     break;
             }
         }
