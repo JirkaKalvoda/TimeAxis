@@ -20,6 +20,7 @@ namespace TimeAxisTest
             TimeAxisMain timeAxisMain = new TimeAxisMain();
             this.Controls.Add(timeAxisMain);
             timeAxisMain.Dock = DockStyle.Fill;
+            timeAxisMain.Ruler.Start = DateTime.Today.AddSeconds(2.2);
             Track t1 = new Track()
             {
                 Height = 30,

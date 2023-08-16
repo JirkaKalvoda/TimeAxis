@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TimeAxis.Model;
 
 namespace TimeAxis
 {
@@ -49,6 +50,9 @@ namespace TimeAxis
             Ruler.Start = DateTime.Today;
             Ruler.Stop = DateTime.Today.AddDays(1);
             MarkLine.Time = Ruler.DisplayStart;
+            lowerTick.IsUpperAlign = false;
+            upperTick.TimeToX = UpperTimeToXPosition;
+            lowerTick.TimeToX = LowerTimeToXPosition;
             // 滚动条不会被清除
             this.Controls.Add(vScrollBar);
             vScrollBar.Width = ScrollWidth;
@@ -59,6 +63,10 @@ namespace TimeAxis
         #endregion
         
         private VScrollBar vScrollBar = new VScrollBar();
+
+        private Tick upperTick = new Tick();
+        
+        private Tick lowerTick = new Tick();
 
         private Keys keyState = Keys.None;
 
@@ -80,7 +88,7 @@ namespace TimeAxis
         private Row hoverRow = null;
 
         /// <summary>
-        /// 鼠标悬停的横线对应的行的上边纵坐标
+        /// 鼠标悬停的横线对应的行的上边Y坐标
         /// </summary>
         private int aboveHeight = 0;
 
@@ -110,7 +118,7 @@ namespace TimeAxis
             }
         }
 
-        #region 从分割条到垂直滚动条左边之间的区域，横坐标和时间互相转化
+        #region 从分割条到垂直滚动条左边之间的区域，X坐标和时间互相转化
 
         /// <summary>
         /// 下标尺和轨道的时间转成X坐标
@@ -187,6 +195,8 @@ namespace TimeAxis
             DrawVerticalScrollBar();
             DrawTrack(graphics);
             DrawMarkLine(graphics);
+            DrawRulerTick(graphics, upperTick);
+            DrawRulerTick(graphics, lowerTick);
             DrawSplitLine(graphics);
         }
 
@@ -216,7 +226,65 @@ namespace TimeAxis
                 graphics.FillRectangle(brush, x1, 0, x2 - x1, Ruler.UpperHeight);
                 graphics.DrawRectangle(pen, x1, 0, x2 - x1, Ruler.UpperHeight);
             }
+
+            upperTick.Start = Ruler.Start;
+            upperTick.Stop = Ruler.Stop;
+            upperTick.XStart = SplitLine.Width + SplitLine.Position;
+            upperTick.XStop = this.Width - vScrollBar.Width;
+            lowerTick.Start = Ruler.DisplayStart;
+            lowerTick.Stop = Ruler.DisplayStop;
+            lowerTick.XStart = SplitLine.Width + SplitLine.Position;
+            lowerTick.XStop = this.Width - vScrollBar.Width;
         }
+
+
+        private void DrawRulerTick(Graphics graphics, Tick tick)
+        {
+            double duration = (tick.Stop - tick.Start).TotalSeconds;
+            double unit = 1;        // 累积单位长度
+            double nextUnit = 1;    // 下个单位长度
+            for (int i = 0; i < Tick.Unit.Length; ++i)
+            {
+                unit *= Tick.Unit[i];
+                if ((tick.XStop - tick.XStart) / (duration / unit) < tick.Resolution)
+                {
+                    continue;
+                }
+                else
+                {
+                    if (i < Tick.Unit.Length - 1)
+                    {
+                        nextUnit = Tick.Unit[i + 1];
+                    }
+                    break;
+                }
+            }
+
+            DateTime startDrawTime = Tick.GetNearestIntTime(tick.Start, unit);
+            using (Pen pen = new Pen(Color.Black, 1))
+            {
+                while (true)
+                {
+                    int x = tick.TimeToX(startDrawTime);
+                    int y1;
+                    int y2;
+                    if (x <= tick.XStop)
+                    {
+                        y1 = tick.IsUpperAlign ? Ruler.UpperHeight : Ruler.Height;
+                        // 判断小刻度还是大刻度
+                        y2 = startDrawTime.TimeOfDay.TotalSeconds % (unit * nextUnit) == 0 ? y1 - tick.LongStickLength : y1 - tick.ShortStickLength;
+                        graphics.DrawLine(pen, x, y1, x, y2);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    startDrawTime = startDrawTime.AddSeconds(unit);
+                }
+            }
+        }
+
+
 
         private void DrawTrack(Graphics graphics)
         {
@@ -270,9 +338,9 @@ namespace TimeAxis
                 graphics.DrawLine(pen, x1, 0, x1, Ruler.UpperHeight);
                 PointF[] points = new PointF[]
                 {
-                    new PointF(x1, Ruler.UpperHeight - 7),
-                    new PointF(x1 - 6, Ruler.UpperHeight), 
-                    new PointF(x1 + 5, Ruler.UpperHeight), 
+                    new PointF(x1, 7),
+                    new PointF(x1 - 6, 0), 
+                    new PointF(x1 + 5, 0), 
                 };
                 graphics.DrawPolygon(pen, points);
                 graphics.FillPolygon(brush, points);
