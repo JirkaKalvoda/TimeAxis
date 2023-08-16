@@ -17,5 +17,11 @@ namespace TimeAxis
         RowLine = 3,
 
         ClickData = 4,
+
+        BoxLeft = 5,
+
+        BoxRight = 6,
+
+        Box = 7,
     }
 }

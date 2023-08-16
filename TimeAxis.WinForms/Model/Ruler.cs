@@ -22,9 +22,9 @@ namespace TimeAxis
         public DateTime Stop { get; set; }
 
         public DateTime DisplayStart { get; set; }
-        
-        public DateTime DisplayStop { get; set; }
 
+        public DateTime DisplayStop { get; set; }
+        
         public string Font { get; set; } = "Calibri";
 
         public float FontSize { get; set; } = 13;
@@ -34,6 +34,12 @@ namespace TimeAxis
         public FontStyle FontStyle { get; set; } = FontStyle.Bold;
 
         public Color BackColor { get; set; } = Color.DeepSkyBlue;
+        
+        public Color BoxColor { get; set; } = Color.DodgerBlue;
+
+        public Color BoxBorderColor { get; set; } = Color.Blue;
+
+        public int BoxBorderWidth { get; set; } = 2;
 
         public int UpperHeight
         {
@@ -43,6 +49,7 @@ namespace TimeAxis
             }
         }
 
+
         public Ruler()
         {
             Start = DateTime.Today;
@@ -50,6 +57,28 @@ namespace TimeAxis
             DisplayStart = Start;
             DisplayStop = Stop;
             Height = 60;
+        }
+        
+        /// <summary>
+        /// 鼠标拖动上标尺方框后根据显示时间段计算比例
+        /// </summary>
+        public void UpdateScale()
+        {
+            Scale = (Stop - Start).TotalSeconds / (DisplayStop - DisplayStart).TotalSeconds;
+            if (Math.Abs(Scale - 1) < 0.01)
+            {
+                ResetScale();
+            }
+        }
+
+        /// <summary>
+        /// 比例恢复到1
+        /// </summary>
+        public void ResetScale()
+        {
+            Scale = 1;
+            DisplayStart = Start;
+            DisplayStop = Stop;
         }
     }
 }

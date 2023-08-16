@@ -85,6 +85,17 @@ namespace TimeAxis
         private int aboveHeight = 0;
 
         /// <summary>
+        /// 鼠标悬停在上标尺方框里时距离左边像素数
+        /// </summary>
+        private int mouseToBoxLeft = 0;
+
+        /// <summary>
+        /// 鼠标悬停在上标尺方框里时距离右边像素数
+        /// </summary>
+        private int mouseToBoxRight = 0;
+
+
+        /// <summary>
         /// 上标尺的游标位置（下标尺的游标位置可以通过时间换算）
         /// </summary>
         internal int MarkLinePosition
@@ -195,8 +206,16 @@ namespace TimeAxis
             {   
                 graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo),
                     font, brush, 15, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight);
+                graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush, 15, (Ruler.UpperHeight - font.Height) / 2);
             }
-            // todo
+            using (Brush brush = new SolidBrush(Ruler.BoxColor))
+            using (Pen pen = new Pen(Ruler.BoxBorderColor, Ruler.BoxBorderWidth))
+            {
+                int x1 = UpperTimeToXPosition(Ruler.DisplayStart);
+                int x2 = UpperTimeToXPosition(Ruler.DisplayStop);
+                graphics.FillRectangle(brush, x1, 0, x2 - x1, Ruler.UpperHeight);
+                graphics.DrawRectangle(pen, x1, 0, x2 - x1, Ruler.UpperHeight);
+            }
         }
 
         private void DrawTrack(Graphics graphics)
@@ -346,14 +365,14 @@ namespace TimeAxis
             }
         }
 
-        private bool IsMouseAtRowLine(int y, out Row hoverRow, out int aboveHeight)
+        private bool IsMouseAtRowLine(int y, out Row hoverRow_, out int aboveHeight_)
         {
             List<Row> rows = new List<Row>();
             rows.Add(Ruler);
             rows.AddRange(Tracks);
             int sumHeight = 0;
-            aboveHeight = 0;
-            hoverRow = null;
+            aboveHeight_ = 0;
+            hoverRow_ = null;
             for (int r = 0; r < rows.Count; ++r)
             {
                 sumHeight += rows[r].Height;
@@ -361,13 +380,13 @@ namespace TimeAxis
                 {
                     sumHeight -= verticalOffset;
                 }
-                aboveHeight = sumHeight - rows[r].Height;
+                aboveHeight_ = sumHeight - rows[r].Height;
                 if (Math.Abs(y - sumHeight) <= threshold)
                 {
                     if (r == 0 || sumHeight > Ruler.Height)
                     {
                         mouseState = MouseState.RowLine;
-                        hoverRow = rows[r];
+                        hoverRow_ = rows[r];
                         Cursor = Cursors.SizeNS;
                         return true;
                     }
@@ -376,9 +395,54 @@ namespace TimeAxis
             return false;
         }
 
+        private bool IsMouseAtBoxBorder(int x, int y)
+        {
+            if (y <= Ruler.UpperHeight)
+            {
+                if (Math.Abs(x - UpperTimeToXPosition(Ruler.DisplayStart)) <= threshold)
+                {
+                    mouseState = MouseState.BoxLeft;
+                    Cursor = Cursors.SizeWE;
+                    return true;
+                }
+                else if (Math.Abs(x - UpperTimeToXPosition(Ruler.DisplayStop)) <= threshold)
+                {
+                    mouseState = MouseState.BoxRight;
+                    Cursor = Cursors.SizeWE;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+
+        private bool IsMouseInBox(int x, int y, out int mouseToBoxLeft_, out int mouseToBoxRight_)
+        {
+            int left = x - UpperTimeToXPosition(Ruler.DisplayStart);
+            int right = UpperTimeToXPosition(Ruler.DisplayStop) - x;
+            mouseToBoxLeft_ = Math.Abs(left);
+            mouseToBoxRight_ = Math.Abs(right);
+            if (y <= Ruler.UpperHeight && left > 0 && right > 0)
+            {
+                mouseState = MouseState.Box;
+                Cursor = Cursors.Hand;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         #endregion
 
-        
 
         private void DragSplitLine(int x)
         {
@@ -404,6 +468,41 @@ namespace TimeAxis
         private void DragRowLine(int y, Row hoverRow, int aboveHeight)
         {
             hoverRow.Height = Math.Max(y - aboveHeight, 10);
+        }
+
+
+        private void DragBoxLeft(int x)
+        {
+            Ruler.DisplayStart = UpperXPositionToTime(x);
+            Ruler.DisplayStart = DateTimeExt.Min(DateTimeExt.Max(Ruler.DisplayStart, Ruler.Start), Ruler.DisplayStop);
+            if ((Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds < 10)
+            {
+                Ruler.DisplayStart = Ruler.DisplayStop.AddSeconds(-10);
+            }
+            Ruler.UpdateScale();
+        }
+
+        private void DragBoxRight(int x)
+        {
+            Ruler.DisplayStop = UpperXPositionToTime(x);
+            Ruler.DisplayStop = DateTimeExt.Max(DateTimeExt.Min(Ruler.DisplayStop, Ruler.Stop), Ruler.DisplayStart);
+            if ((Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds < 10)
+            {
+                Ruler.DisplayStop = Ruler.DisplayStart.AddSeconds(10);
+            }
+            Ruler.UpdateScale();
+        }
+
+        private void DragBox(int x)
+        {
+            DateTime start = UpperXPositionToTime(x - mouseToBoxLeft);
+            DateTime stop = UpperXPositionToTime(x + mouseToBoxRight);
+            if (start < Ruler.Start || stop > Ruler.Stop)
+            {
+                return;
+            }
+            Ruler.DisplayStart = start;
+            Ruler.DisplayStop = stop;
         }
 
         private void ClickSegment(int x, int y)
@@ -453,6 +552,7 @@ namespace TimeAxis
             }
         }
 
+        
         private void HoriScale(int delta, int x)
         {
             if (delta < 0)
@@ -463,14 +563,14 @@ namespace TimeAxis
             {
                 Ruler.Scale = Math.Max(Ruler.Scale - 0.25, 1);
             }
-            // 防止到原始比例出现误差
+            // 防止回到原始比例出现误差
             if (Math.Abs(Ruler.Scale - 1) < 0.01)
             {
                 Ruler.Scale = 1;
                 Ruler.DisplayStart = Ruler.Start;
             }
             DateTime mouseTime = LowerXPositionToTime(x);
-            Ruler.DisplayStart = mouseTime.AddSeconds(-(mouseTime - Ruler.Start).TotalSeconds / Ruler.Scale);
+            Ruler.DisplayStart = mouseTime.AddSeconds((Ruler.Start - mouseTime).TotalSeconds / Ruler.Scale);
             Ruler.DisplayStop = mouseTime.AddSeconds((Ruler.Stop - mouseTime).TotalSeconds / Ruler.Scale);
             Invalidate();
         }
@@ -503,6 +603,14 @@ namespace TimeAxis
                 if (IsMouseAtMarkLine(e.X, e.Y))
                 {
                 }
+                // 判断上标尺方框边界
+                else if (IsMouseAtBoxBorder(e.X, e.Y))
+                {
+                }
+                // 判断上标尺方框
+                else if (IsMouseInBox(e.X, e.Y, out mouseToBoxLeft, out mouseToBoxRight))
+                {
+                }
                 // 判断分割线
                 else if (IsMouseAtSplitLine(e.X))
                 {
@@ -519,6 +627,7 @@ namespace TimeAxis
             }
             else if ((e.Button & MouseButtons.Left) > 0)
             {
+                
                 switch (mouseState)
                 {
                     case MouseState.MarkLine:
@@ -533,6 +642,18 @@ namespace TimeAxis
                         DragRowLine(e.Y, hoverRow, aboveHeight);
                         break;
 
+                    case MouseState.BoxLeft:
+                        DragBoxLeft(e.X);
+                        break;
+
+                    case MouseState.BoxRight:
+                        DragBoxRight(e.X);
+                        break;
+
+                    case MouseState.Box:
+                        DragBox(e.X);
+                        break;
+
                     default:
                         break;
                 }
@@ -542,6 +663,9 @@ namespace TimeAxis
                     case MouseState.MarkLine:
                     case MouseState.SplitLine:
                     case MouseState.RowLine:
+                    case MouseState.BoxLeft:
+                    case MouseState.BoxRight:
+                    case MouseState.Box:
                         Invalidate();
                         break;
 
