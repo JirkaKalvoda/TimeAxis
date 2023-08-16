@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace TimeAxis
 {
+    /// <summary>
+    /// 鼠标状态枚举
+    /// </summary>
     public enum MouseState
     {
         None = 0,

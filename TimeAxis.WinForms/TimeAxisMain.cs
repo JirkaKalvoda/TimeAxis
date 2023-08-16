@@ -85,14 +85,14 @@ namespace TimeAxis
         private int aboveHeight = 0;
 
         /// <summary>
-        /// 鼠标悬停在上标尺方框里时距离左边像素数
+        /// 鼠标悬停在上标尺方框里时距离左边的时间长度
         /// </summary>
-        private int mouseToBoxLeft = 0;
+        private double mouseToDisplayStart = 0;
 
         /// <summary>
-        /// 鼠标悬停在上标尺方框里时距离右边像素数
+        /// 鼠标悬停在上标尺方框里时距离右边的时间长度
         /// </summary>
-        private int mouseToBoxRight = 0;
+        private double mouseToDisplayStop = 0;
 
 
         /// <summary>
@@ -423,10 +423,11 @@ namespace TimeAxis
         }
 
 
-        private bool IsMouseInBox(int x, int y, out int mouseToBoxLeft_, out int mouseToBoxRight_)
+        private bool IsMouseInBox(int x, int y, out double mouseToBoxLeft_, out double mouseToBoxRight_)
         {
-            int left = x - UpperTimeToXPosition(Ruler.DisplayStart);
-            int right = UpperTimeToXPosition(Ruler.DisplayStop) - x;
+            DateTime hover = UpperXPositionToTime(x);
+            double left = (hover - Ruler.DisplayStart).TotalSeconds;
+            double right = (Ruler.DisplayStop - hover).TotalSeconds;
             mouseToBoxLeft_ = Math.Abs(left);
             mouseToBoxRight_ = Math.Abs(right);
             if (y <= Ruler.UpperHeight && left > 0 && right > 0)
@@ -493,10 +494,10 @@ namespace TimeAxis
             Ruler.UpdateScale();
         }
 
-        private void DragBox(int x)
+        private void DragBox(DateTime x)
         {
-            DateTime start = UpperXPositionToTime(x - mouseToBoxLeft);
-            DateTime stop = UpperXPositionToTime(x + mouseToBoxRight);
+            DateTime start = x.AddSeconds(-mouseToDisplayStart);
+            DateTime stop = x.AddSeconds(mouseToDisplayStop);
             if (start < Ruler.Start || stop > Ruler.Stop)
             {
                 return;
@@ -608,7 +609,7 @@ namespace TimeAxis
                 {
                 }
                 // 判断上标尺方框
-                else if (IsMouseInBox(e.X, e.Y, out mouseToBoxLeft, out mouseToBoxRight))
+                else if (IsMouseInBox(e.X, e.Y, out mouseToDisplayStart, out mouseToDisplayStop))
                 {
                 }
                 // 判断分割线
@@ -651,7 +652,7 @@ namespace TimeAxis
                         break;
 
                     case MouseState.Box:
-                        DragBox(e.X);
+                        DragBox(UpperXPositionToTime(e.X));
                         break;
 
                     default:
