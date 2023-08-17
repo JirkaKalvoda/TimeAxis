@@ -101,7 +101,7 @@ namespace TimeAxis
 
 
         /// <summary>
-        /// 上标尺的游标位置（下标尺的游标位置可以通过时间换算）
+        /// 上标尺的游标位置（下标尺的游标位置由时间决定，并且为了保证精度，不能再引用上游标位置）
         /// </summary>
         internal int MarkLinePosition
         {
@@ -519,17 +519,19 @@ namespace TimeAxis
 
         private void DragMarkLine(int x, int y)
         {
+            int temp = x;
+            x = Math.Max(x, SplitLine.Position + SplitLine.Width);
+            x = Math.Min(x, this.Width - vScrollBar.Width);
             if (y <= Ruler.UpperHeight)
             {
                 MarkLinePosition = x;
             }
             else
             {
-                MarkLinePosition = UpperTimeToXPosition(LowerXPositionToTime(x));
+                MarkLine.Time = LowerXPositionToTime(x);
             }
-            MarkLinePosition = Math.Max(MarkLinePosition, SplitLine.Position + SplitLine.Width);
-            MarkLinePosition = Math.Min(MarkLinePosition, this.Width - vScrollBar.Width);
         }
+
 
         private void DragRowLine(int y, Row hoverRow, int aboveHeight)
         {

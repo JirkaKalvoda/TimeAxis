@@ -56,7 +56,7 @@ namespace TimeAxis
             Stop = DateTime.Today.AddDays(1);
             DisplayStart = Start;
             DisplayStop = Stop;
-            Height = 60;
+            Height = 70;
         }
         
         /// <summary>
