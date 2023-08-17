@@ -30,8 +30,6 @@ namespace TimeAxis
 
         public int ScrollWidth { get; set; } = 15;
 
-        
-        
         public SplitLine SplitLine { get; set; } = new SplitLine();
 
         public MarkLine MarkLine { get; set; } = new MarkLine();
@@ -40,9 +38,12 @@ namespace TimeAxis
 
         public List<Track> Tracks { get; set; } = new List<Track>();
 
-        
+        public Tick UpperTick { get; set; } = new Tick();
+
+        public Tick LowerTick { get; set; } = new Tick();
+
         #endregion
-        
+
         public TimeAxisMain()
         {
             InitializeComponent();
@@ -50,9 +51,9 @@ namespace TimeAxis
             Ruler.Start = DateTime.Today;
             Ruler.Stop = DateTime.Today.AddDays(1);
             MarkLine.Time = Ruler.DisplayStart;
-            lowerTick.IsUpperAlign = false;
-            upperTick.TimeToX = UpperTimeToXPosition;
-            lowerTick.TimeToX = LowerTimeToXPosition;
+            LowerTick.IsUpperAlign = false;
+            UpperTick.TimeToX = UpperTimeToXPosition;
+            LowerTick.TimeToX = LowerTimeToXPosition;
             // 滚动条不会被清除
             this.Controls.Add(vScrollBar);
             vScrollBar.Width = ScrollWidth;
@@ -63,10 +64,6 @@ namespace TimeAxis
         #endregion
         
         private VScrollBar vScrollBar = new VScrollBar();
-
-        private Tick upperTick = new Tick();
-        
-        private Tick lowerTick = new Tick();
 
         private Keys keyState = Keys.None;
 
@@ -195,8 +192,8 @@ namespace TimeAxis
             DrawVerticalScrollBar();
             DrawTrack(graphics);
             DrawMarkLine(graphics);
-            DrawRulerTick(graphics, upperTick);
-            DrawRulerTick(graphics, lowerTick);
+            DrawRulerTick(graphics, UpperTick);
+            DrawRulerTick(graphics, LowerTick);
             DrawSplitLine(graphics);
         }
 
@@ -227,14 +224,14 @@ namespace TimeAxis
                 graphics.DrawRectangle(pen, x1, 0, x2 - x1, Ruler.UpperHeight);
             }
 
-            upperTick.Start = Ruler.Start;
-            upperTick.Stop = Ruler.Stop;
-            upperTick.XStart = SplitLine.Width + SplitLine.Position;
-            upperTick.XStop = this.Width - vScrollBar.Width;
-            lowerTick.Start = Ruler.DisplayStart;
-            lowerTick.Stop = Ruler.DisplayStop;
-            lowerTick.XStart = SplitLine.Width + SplitLine.Position;
-            lowerTick.XStop = this.Width - vScrollBar.Width;
+            UpperTick.Start = Ruler.Start;
+            UpperTick.Stop = Ruler.Stop;
+            UpperTick.XStart = SplitLine.Width + SplitLine.Position;
+            UpperTick.XStop = this.Width - vScrollBar.Width;
+            LowerTick.Start = Ruler.DisplayStart;
+            LowerTick.Stop = Ruler.DisplayStop;
+            LowerTick.XStart = SplitLine.Width + SplitLine.Position;
+            LowerTick.XStop = this.Width - vScrollBar.Width;
         }
 
 
