@@ -52,6 +52,7 @@
     <Compile Include="Enum\MouseState.cs" />
     <Compile Include="Method\DateTimeExt.cs" />
     <Compile Include="Model\MarkLine.cs" />
+    <Compile Include="Model\RightClickData.cs" />
     <Compile Include="Model\Row.cs" />
     <Compile Include="Model\Ruler.cs" />
     <Compile Include="Model\Segment.cs" />

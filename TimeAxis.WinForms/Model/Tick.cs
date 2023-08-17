@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +31,14 @@ namespace TimeAxis.Model
         /// 每个最小间隔横向至少要多少像素
         /// </summary>
         public int Resolution { get; set; } = 4;
+
+        public string Font { get; set; } = "Calibri";
+
+        public float FontSize { get; set; } = 7;
+
+        public Color FontColor { get; set; } = Color.Black;
+
+        public FontStyle FontStyle { get; set; } = FontStyle.Regular;
 
         internal DateTime Start { get; set; }
 

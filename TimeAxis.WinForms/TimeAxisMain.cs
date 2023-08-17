@@ -42,6 +42,17 @@ namespace TimeAxis
 
         public Tick LowerTick { get; set; } = new Tick();
 
+        public ContextMenuStrip RulerHeaderMenu { get; set; } = new ContextMenuStrip();
+
+        public ContextMenuStrip RulerMenu { get; set; } = new ContextMenuStrip();
+        
+        public ContextMenuStrip TrackHeaderMenu { get; set; } = new ContextMenuStrip();
+        
+        public ContextMenuStrip TrackBlankMenu { get; set; } = new ContextMenuStrip();
+        
+        public ContextMenuStrip SegmentMenu { get; set; } = new ContextMenuStrip();
+
+
         #endregion
 
         public TimeAxisMain()
@@ -59,12 +70,12 @@ namespace TimeAxis
             vScrollBar.Width = ScrollWidth;
             vScrollBar.SmallChange = 5;
             vScrollBar.ValueChanged += VerticalScrollBar_ValueChanged;
+
+            InitRightClickMenu();
         }
 
         #endregion
         
-        private VScrollBar vScrollBar = new VScrollBar();
-
         private Keys keyState = Keys.None;
 
         private MouseState mouseState = MouseState.None;
@@ -115,6 +126,15 @@ namespace TimeAxis
             }
         }
 
+        private VScrollBar vScrollBar = new VScrollBar();
+        private ToolStripMenuItem tsmi_ResetScale;
+        private ToolStripMenuItem tsmi_ResetScale2;
+        private ToolStripMenuItem tsmi_SetTime;
+        private ToolStripMenuItem tsmi_SetTime2;
+        private ToolStripMenuItem tsmi_SetTime3;
+        private ToolStripMenuItem tsmi_ShowAllTrack;
+        private ToolStripMenuItem tsmi_SegmentFill;
+        
         #region 从分割条到垂直滚动条左边之间的区域，X坐标和时间互相转化
 
         /// <summary>
@@ -258,7 +278,9 @@ namespace TimeAxis
             }
 
             DateTime startDrawTime = Tick.GetNearestIntTime(tick.Start, unit);
-            using (Pen pen = new Pen(Color.Black, 1))
+            using (Pen pen = new Pen(tick.FontColor, 1))
+            using (Brush brush = new SolidBrush(tick.FontColor))
+            using (Font font = new Font(tick.Font, tick.FontSize, tick.FontStyle))
             {
                 while (true)
                 {
@@ -271,6 +293,12 @@ namespace TimeAxis
                         // 判断小刻度还是大刻度
                         y2 = startDrawTime.TimeOfDay.TotalSeconds % (unit * nextUnit) == 0 ? y1 - tick.LongStickLength : y1 - tick.ShortStickLength;
                         graphics.DrawLine(pen, x, y1, x, y2);
+
+                        if (startDrawTime.TimeOfDay.TotalSeconds % (unit * nextUnit) == 0)
+                        {
+                            graphics.DrawString(startDrawTime.ToString("HH:mm", DateTimeFormatInfo.InvariantInfo), font, brush,
+                                x + 1, y2 - font.Height + 3);
+                        }
                     }
                     else
                     {
@@ -519,7 +547,6 @@ namespace TimeAxis
 
         private void DragMarkLine(int x, int y)
         {
-            int temp = x;
             x = Math.Max(x, SplitLine.Position + SplitLine.Width);
             x = Math.Min(x, this.Width - vScrollBar.Width);
             if (y <= Ruler.UpperHeight)
@@ -573,8 +600,15 @@ namespace TimeAxis
             Ruler.DisplayStop = stop;
         }
 
-        private void ClickSegment(int x, int y)
+        /// <summary>
+        /// 点击轨道区域
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        private Track ClickTrack(int x, int y)
         {
+            Track ret = null;
             int height = Ruler.Height + verticalOffset;
             for (int row = 0; row < Tracks.Count; ++row)
             {
@@ -582,19 +616,7 @@ namespace TimeAxis
                 // 如果前几行被完全挡住了就不响应点击
                 if (y >= Math.Max(height - Tracks[row].Height, Ruler.Height) && y <= height)
                 {
-                    for (int column = 0; column < Tracks[row].Segments.Count; ++column)
-                    {
-                        int x1 = LowerTimeToXPosition(Tracks[row].Segments[column].Start);
-                        int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
-                        if (x >= x1 && x <= x2)
-                        {
-                            Tracks[row].Segments[column].IsSelected = true;
-                        }
-                        else
-                        {
-                            Tracks[row].Segments[column].IsSelected = false;
-                        }
-                    }
+                    ret = Tracks[row];
                 }
                 else
                 {
@@ -605,6 +627,37 @@ namespace TimeAxis
                 }
             }
             mouseState = MouseState.ClickData;
+            return ret;
+        }
+
+        /// <summary>
+        /// 点击1条轨道里的段
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="track"></param>
+        /// <returns></returns>
+        private Segment ClickSegment(int x, int y, Track track)
+        {
+            Segment ret = null;
+            if (track != null)
+            {
+                for (int column = 0; column < track.Segments.Count; ++column)
+                {
+                    int x1 = LowerTimeToXPosition(track.Segments[column].Start);
+                    int x2 = LowerTimeToXPosition(track.Segments[column].Stop);
+                    if (x >= x1 && x <= x2)
+                    {
+                        track.Segments[column].IsSelected = true;
+                        ret = track.Segments[column];
+                    }
+                    else
+                    {
+                        track.Segments[column].IsSelected = false;
+                    }
+                }
+            }
+            return ret;
         }
 
 
@@ -746,9 +799,50 @@ namespace TimeAxis
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
-            if ((e.Button | MouseButtons.Left | MouseButtons.Right) > 0 && e.X >= SplitLine.Position + SplitLine.Width)
+            RightClickData data = new RightClickData();
+            Track track = null;
+            Segment segment = null;
+
+            if ((e.Button & (MouseButtons.Left | MouseButtons.Right)) > 0 && e.X >= SplitLine.Position + SplitLine.Width && e.Y > Ruler.Height)
             {
-                ClickSegment(e.X, e.Y);
+                track = ClickTrack(e.X, e.Y);
+                segment = ClickSegment(e.X, e.Y, track);
+                if ((e.Button & MouseButtons.Right) > 0)
+                {
+                    data.MarkTime = LowerXPositionToTime(e.X);
+                    data.Track = track;
+                    data.Segment = segment;
+                    data.Position = e.Location;
+                    if (segment != null)
+                    {
+                        SegmentMenu.Tag = data;
+                        SegmentMenu.Show(MousePosition);
+                    }
+                    else
+                    {
+                        TrackBlankMenu.Tag = data;
+                        TrackBlankMenu.Show(MousePosition);
+                    }
+                }
+            }
+            else if ((e.Button & MouseButtons.Right) > 0 && e.X <= SplitLine.Position && e.Y > Ruler.Height)
+            {
+                track = ClickTrack(e.X, e.Y);
+                data.Track = track;
+                TrackHeaderMenu.Tag = data;
+                TrackHeaderMenu.Show(MousePosition);
+            }
+            else if ((e.Button & MouseButtons.Right) > 0 && e.X >= SplitLine.Position + SplitLine.Width && e.Y <= Ruler.Height)
+            {
+                data.MarkTime = LowerXPositionToTime(e.X);
+                data.Position = e.Location;
+                RulerMenu.Tag = data;
+                RulerMenu.Show(MousePosition);
+            }
+            else if ((e.Button & MouseButtons.Right) > 0 && e.X <= SplitLine.Position && e.Y <= Ruler.Height)
+            {
+                RulerHeaderMenu.Tag = data;
+                RulerHeaderMenu.Show(MousePosition);
             }
             else
             {
@@ -783,6 +877,82 @@ namespace TimeAxis
                 HoriScroll(e.Delta);
             }
         }
+
+        #region 右键菜单
+
+        private void InitRightClickMenu()
+        {
+            tsmi_ResetScale = new ToolStripMenuItem("Reset Scale");
+            tsmi_ResetScale2 = new ToolStripMenuItem("Reset Scale");
+            tsmi_SetTime = new ToolStripMenuItem("Set Time Here");
+            tsmi_SetTime2 = new ToolStripMenuItem("Set Time Here");
+            tsmi_SetTime3 = new ToolStripMenuItem("Set Time Here");
+            tsmi_ShowAllTrack = new ToolStripMenuItem("Restore Hidden Items");
+            tsmi_SegmentFill = new ToolStripMenuItem("Fill");
+            RulerHeaderMenu.Items.Add(tsmi_ResetScale);
+            RulerMenu.Items.Add(tsmi_SetTime);
+            RulerMenu.Items.Add(tsmi_ResetScale2);
+            TrackHeaderMenu.Items.Add(tsmi_ShowAllTrack);
+            TrackBlankMenu.Items.Add(tsmi_SetTime2);
+            SegmentMenu.Items.Add(tsmi_SetTime3);
+            SegmentMenu.Items.Add(tsmi_SegmentFill);
+            RulerHeaderMenu.Opening += ContextMenuStrip_Opening;
+            RulerMenu.Opening += ContextMenuStrip_Opening;
+            TrackHeaderMenu.Opening += ContextMenuStrip_Opening;
+            TrackBlankMenu.Opening += ContextMenuStrip_Opening;
+            SegmentMenu.Opening += ContextMenuStrip_Opening;
+            tsmi_ResetScale.Click += Tsmi_ResetScale_Click;
+            tsmi_ResetScale2.Click += Tsmi_ResetScale_Click;
+            tsmi_SetTime.Click += Tsmi_SetTime_Click;
+            tsmi_SetTime2.Click += Tsmi_SetTime_Click;
+            tsmi_SetTime3.Click += Tsmi_SetTime_Click;
+            tsmi_ShowAllTrack.Click += Tsmi_ShowAllTrack_Click;
+            tsmi_SegmentFill.Click += Tsmi_SegmentFill_Click;
+        }
+
+        private void ContextMenuStrip_Opening(object sender, CancelEventArgs e)
+        {
+            ContextMenuStrip cms = sender as ContextMenuStrip;
+            for (int i = 0; i < cms.Items.Count; ++i)
+            {
+                cms.Items[i].Tag = cms.Tag;
+            }
+        }
+
+        private void Tsmi_ResetScale_Click(object sender, EventArgs e)
+        {
+            Ruler.ResetScale();
+            Invalidate();
+        }
+
+        private void Tsmi_SetTime_Click(object sender, EventArgs e)
+        {
+            RightClickData data = (sender as ToolStripMenuItem).Tag as RightClickData;
+            MarkLine.Time = data.Position.Y <= Ruler.UpperHeight ? UpperXPositionToTime(data.Position.X) : LowerXPositionToTime(data.Position.X);
+            data.MarkTime = MarkLine.Time;
+            Invalidate();
+        }
+
+
+        private void Tsmi_ShowAllTrack_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < Tracks.Count; ++i)
+            {
+                Tracks[i].IsShow = true;
+            }
+            Invalidate();
+        }
+
+        private void Tsmi_SegmentFill_Click(object sender, EventArgs e)
+        {
+            RightClickData data = (sender as ToolStripMenuItem).Tag as RightClickData;
+            Ruler.DisplayStart = data.Segment.Start;
+            Ruler.DisplayStop = data.Segment.Stop;
+            Invalidate();
+        }
+
+
+        #endregion
 
         #endregion
 

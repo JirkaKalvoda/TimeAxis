@@ -11,5 +11,20 @@ namespace TimeAxis
         public List<Segment> Segments = new List<Segment>();
 
         public bool IsShow { get; set; } = true;
+
+        /// <summary>
+        /// 显示文本
+        /// </summary>
+        public string Text { get; set; }
+
+        /// <summary>
+        /// 惟一名字
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// 惟一号码
+        /// </summary>
+        public int Id { get; set; }
     }
 }

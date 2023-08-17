@@ -27,5 +27,20 @@ namespace TimeAxis
         public int BorderWidth { get; set; } = 2;
 
         public bool IsSelected { get; set; } = false;
+
+        /// <summary>
+        /// 显示文本
+        /// </summary>
+        public string Text { get; set; }
+
+        /// <summary>
+        /// 惟一名字
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// 惟一号码
+        /// </summary>
+        public int Id { get; set; }
     }
 }
