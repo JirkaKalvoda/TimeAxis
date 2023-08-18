@@ -36,8 +36,12 @@ namespace TimeAxisTest
                 DefaultColor = Color.GreenYellow,
                 Start = DateTime.Today.AddHours(7),
                 Stop = DateTime.Today.AddHours(15),
+                Text = "Segment2",
             });
-            Track t2 = new Track();
+            Track t2 = new Track()
+            {
+                Text = "Track2",
+            };
             t2.Segments.Add(new Segment()
             {
                 Start = DateTime.Today.AddHours(3),
@@ -49,11 +53,15 @@ namespace TimeAxisTest
                 Start = DateTime.Today.AddHours(4),
                 Stop = DateTime.Today.AddHours(7),
             });
-            Track t4 = new Track();
+            Track t4 = new Track()
+            {
+                Text = "Track4",
+            };
             t4.Segments.Add(new Segment()
             {
                 Start = DateTime.Today.AddHours(5),
                 Stop = DateTime.Today.AddHours(24),
+                Text = "Segment1",
             });
             Track t5 = new Track();
             t5.Segments.Add(new Segment()

@@ -42,5 +42,13 @@ namespace TimeAxis
         /// 惟一号码
         /// </summary>
         public int Id { get; set; }
+
+        public string Font { get; set; } = "Calibri";
+
+        public float FontSize { get; set; } = 8;
+
+        public Color FontColor { get; set; } = Color.Black;
+
+        public FontStyle FontStyle { get; set; } = FontStyle.Bold;
     }
 }

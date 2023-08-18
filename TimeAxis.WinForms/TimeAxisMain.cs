@@ -75,6 +75,8 @@ namespace TimeAxis
         }
 
         #endregion
+
+        private const int leftPadding = 15;
         
         private Keys keyState = Keys.None;
 
@@ -232,8 +234,8 @@ namespace TimeAxis
             using (Brush brush = new SolidBrush(Ruler.FontColor))
             {   
                 graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo),
-                    font, brush, 15, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight);
-                graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush, 15, (Ruler.UpperHeight - font.Height) / 2);
+                    font, brush, leftPadding, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight);
+                graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush, leftPadding, (Ruler.UpperHeight - font.Height) / 2);
             }
             using (Brush brush = new SolidBrush(Ruler.BoxColor))
             using (Pen pen = new Pen(Ruler.BoxBorderColor, Ruler.BoxBorderWidth))
@@ -327,17 +329,27 @@ namespace TimeAxis
                     if (lineHeight > Ruler.Height)
                     {
                         graphics.DrawLine(pen, 0, lineHeight, this.Width, lineHeight);
+                        int y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
+                        int y2 = lineHeight;
+                        using (Brush brush = new SolidBrush(Tracks[row].FontColor))
+                        using (Font font = new Font(Tracks[row].Font, Tracks[row].FontSize, Tracks[row].FontStyle))
+                        {
+                            graphics.DrawString(Tracks[row].Text, font, brush, leftPadding, (y2 - y1 - font.Height) / 2 + y1);
+                        }
                         for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                         {
                             int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
                             int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
-                            int y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
-                            int y2 = lineHeight;
                             using (Pen segPen = new Pen(Tracks[row].Segments[column].BorderColor, Tracks[row].Segments[column].BorderWidth))
                             using (Brush brush = new SolidBrush(Tracks[row].Segments[column].Color))
                             {
                                 graphics.FillRectangle(brush, x1, y1, x2 - x1, y2 - y1);
                                 graphics.DrawRectangle(segPen, x1, y1, x2 - x1, y2 - y1);
+                            }
+                            using (Brush brush = new SolidBrush(Tracks[row].Segments[column].FontColor))
+                            using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
+                            {
+                                graphics.DrawString(Tracks[row].Segments[column].Text, font, brush, x1 + 2, (y2 - y1 - font.Height) / 2 + y1);
                             }
                         }
                     }
