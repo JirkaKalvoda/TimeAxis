@@ -233,9 +233,10 @@ namespace TimeAxis
             using (Font font = new Font(Ruler.Font, Ruler.FontSize, Ruler.FontStyle))
             using (Brush brush = new SolidBrush(Ruler.FontColor))
             {   
-                graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo),
-                    font, brush, leftPadding, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight);
-                graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush, leftPadding, (Ruler.UpperHeight - font.Height) / 2);
+                graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo), font, brush,
+                    new Rectangle(leftPadding, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight, SplitLine.Position - leftPadding, font.Height));
+                graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush,
+                    new Rectangle(leftPadding, (Ruler.UpperHeight - font.Height) / 2, SplitLine.Position - leftPadding, font.Height));
             }
             using (Brush brush = new SolidBrush(Ruler.BoxColor))
             using (Pen pen = new Pen(Ruler.BoxBorderColor, Ruler.BoxBorderWidth))
@@ -334,7 +335,8 @@ namespace TimeAxis
                         using (Brush brush = new SolidBrush(Tracks[row].FontColor))
                         using (Font font = new Font(Tracks[row].Font, Tracks[row].FontSize, Tracks[row].FontStyle))
                         {
-                            graphics.DrawString(Tracks[row].Text, font, brush, leftPadding, (y2 - y1 - font.Height) / 2 + y1);
+                            graphics.DrawString(Tracks[row].Text, font, brush,
+                                new Rectangle(leftPadding, (y2 - y1 - font.Height) / 2 + y1, SplitLine.Position - leftPadding, font.Height));
                         }
                         for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                         {
@@ -349,7 +351,8 @@ namespace TimeAxis
                             using (Brush brush = new SolidBrush(Tracks[row].Segments[column].FontColor))
                             using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
                             {
-                                graphics.DrawString(Tracks[row].Segments[column].Text, font, brush, x1 + 2, (y2 - y1 - font.Height) / 2 + y1);
+                                graphics.DrawString(Tracks[row].Segments[column].Text, font, brush,
+                                    new Rectangle(x1 + 2, (y2 - y1 - font.Height) / 2 + y1, Math.Min(x2, this.Width) - x1 - 2, font.Height));
                             }
                         }
                     }
