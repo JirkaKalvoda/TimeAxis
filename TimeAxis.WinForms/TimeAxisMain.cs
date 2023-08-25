@@ -78,6 +78,10 @@ namespace TimeAxis
 
         private const int leftPadding = 15;
         
+        private const int imageSize = 16;
+
+        private const int leftPaddingTrack = 24;
+        
         private Keys keyState = Keys.None;
 
         private MouseState mouseState = MouseState.None;
@@ -232,11 +236,18 @@ namespace TimeAxis
             }
             using (Font font = new Font(Ruler.Font, Ruler.FontSize, Ruler.FontStyle))
             using (Brush brush = new SolidBrush(Ruler.FontColor))
-            {   
+            {
+                // 矩形某个维度是0时不起作用
+                int width = SplitLine.Position - leftPadding;
+                int height = Math.Min(font.Height, Ruler.LowerHeight);
+                width = width == 0 ? -1 : width;
+                height = height == 0 ? -1 : height;
                 graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo), font, brush,
-                    new Rectangle(leftPadding, (Ruler.Height - Ruler.UpperHeight - font.Height) / 2 + Ruler.UpperHeight, SplitLine.Position - leftPadding, font.Height));
+                    new Rectangle(leftPadding, (Ruler.LowerHeight - font.Height) / 2 + Ruler.UpperHeight, width, height));
+                height = Math.Min(font.Height, Ruler.UpperHeight);
+                height = height == 0 ? -1 : height;
                 graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush,
-                    new Rectangle(leftPadding, (Ruler.UpperHeight - font.Height) / 2, SplitLine.Position - leftPadding, font.Height));
+                    new Rectangle(leftPadding, (Ruler.UpperHeight - font.Height) / 2, width, height));
             }
             using (Brush brush = new SolidBrush(Ruler.BoxColor))
             using (Pen pen = new Pen(Ruler.BoxBorderColor, Ruler.BoxBorderWidth))
@@ -335,8 +346,12 @@ namespace TimeAxis
                         using (Brush brush = new SolidBrush(Tracks[row].FontColor))
                         using (Font font = new Font(Tracks[row].Font, Tracks[row].FontSize, Tracks[row].FontStyle))
                         {
+                            int width = SplitLine.Position - leftPaddingTrack;
+                            int height = Math.Min(font.Height, y2 - y1);
+                            width = width == 0 ? -1 : width;
+                            height = height == 0 ? -1 : height;
                             graphics.DrawString(Tracks[row].Text, font, brush,
-                                new Rectangle(leftPadding, (y2 - y1 - font.Height) / 2 + y1, SplitLine.Position - leftPadding, font.Height));
+                                new Rectangle(leftPaddingTrack, (y2 - y1 - font.Height) / 2 + y1, width, height));
                         }
                         for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                         {
@@ -351,8 +366,12 @@ namespace TimeAxis
                             using (Brush brush = new SolidBrush(Tracks[row].Segments[column].FontColor))
                             using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
                             {
+                                int width = Math.Min(x2, this.Width) - x1 - 2;
+                                int height = Math.Min(font.Height, y2 - y1);
+                                width = width == 0 ? -1 : width;
+                                height = height == 0 ? -1 : height;
                                 graphics.DrawString(Tracks[row].Segments[column].Text, font, brush,
-                                    new Rectangle(x1 + 2, (y2 - y1 - font.Height) / 2 + y1, Math.Min(x2, this.Width) - x1 - 2, font.Height));
+                                    new Rectangle(x1 + 2, (y2 - y1 - font.Height) / 2 + y1, width, height));
                             }
                         }
                     }

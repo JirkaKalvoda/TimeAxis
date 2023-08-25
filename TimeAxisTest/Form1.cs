@@ -24,12 +24,14 @@ namespace TimeAxisTest
             Track t1 = new Track()
             {
                 Height = 30,
+                Text = "Track1",
             };
             t1.Segments.Add(new Segment()
             {
                 DefaultColor = Color.Magenta,
                 Start = DateTime.Today.AddHours(2),
                 Stop = DateTime.Today.AddHours(4),
+                Text = "Segment1",
             });
             t1.Segments.Add(new Segment()
             {
@@ -46,12 +48,14 @@ namespace TimeAxisTest
             {
                 Start = DateTime.Today.AddHours(3),
                 Stop = DateTime.Today.AddHours(6),
+                Text = "Segment1",
             });
             Track t3 = new Track();
             t3.Segments.Add(new Segment()
             {
                 Start = DateTime.Today.AddHours(4),
                 Stop = DateTime.Today.AddHours(7),
+                Text = "Segment1",
             });
             Track t4 = new Track()
             {
@@ -68,6 +72,7 @@ namespace TimeAxisTest
             {
                 Start = DateTime.Today.AddHours(6),
                 Stop = DateTime.Today.AddHours(9),
+                Text = "Segment1",
             });
             timeAxisMain.Tracks.Add(t1);
             timeAxisMain.Tracks.Add(t2);

@@ -49,6 +49,13 @@ namespace TimeAxis
             }
         }
 
+        public int LowerHeight
+        {
+            get
+            {
+                return Height - UpperHeight;
+            }
+        }
 
         public Ruler()
         {
