@@ -82,6 +82,7 @@ namespace TimeAxis
         private const int leftPaddingTrack = 24;
         private const int imageSize = 16;
         private const int leftPaddingSegmentName = 2;
+        private const int rowHeightMin = 10;
 
         private Keys keyState = Keys.None;
 
@@ -650,7 +651,7 @@ namespace TimeAxis
 
         private void DragRowLine(int y, Row hoverRow, int aboveHeight)
         {
-            hoverRow.Height = Math.Max(y - aboveHeight, 10);
+            hoverRow.Height = Math.Max(y - aboveHeight, rowHeightMin);
         }
 
 
@@ -751,6 +752,25 @@ namespace TimeAxis
             return ret;
         }
 
+
+        private void VertScale(int delta)
+        {
+            if (delta < 0)
+            {
+                for (int i = 0; i < Tracks.Count; ++i)
+                {
+                    Tracks[i].Height = (int) (Tracks[i].Height * 1.2);
+                }
+            }
+            else if (delta > 0)
+            {
+                for (int i = 0; i < Tracks.Count; ++i)
+                {
+                    Tracks[i].Height = Math.Max(rowHeightMin, (int) (Tracks[i].Height / 1.2));
+                }
+            }
+            Invalidate();
+        }
 
         private void VertScroll(int delta)
         {
@@ -978,15 +998,19 @@ namespace TimeAxis
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             base.OnMouseWheel(e);
-            if (e.Y > Ruler.Height && keyState == Keys.ShiftKey)
+            if (e.Y > Ruler.Height && keyState == Keys.ControlKey)
             {
                 VertScroll(e.Delta);
+            }
+            else if (e.Y > Ruler.Height && keyState == Keys.ShiftKey)
+            {
+                VertScale(e.Delta);
             }
             else if (e.X >= SplitLine.Width + SplitLine.Position && keyState == Keys.Menu)
             {
                 HoriScale(e.Delta, e.X);
             }
-            else if (e.Y > Ruler.Height && keyState == Keys.None)
+            else if (e.X >= SplitLine.Width + SplitLine.Position && keyState == Keys.None)
             {
                 HoriScroll(e.Delta);
             }
