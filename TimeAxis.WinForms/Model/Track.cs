@@ -11,6 +11,9 @@ namespace TimeAxis
     {
         public List<Segment> Segments = new List<Segment>();
 
+        /// <summary>
+        /// 是否显示行
+        /// </summary>
         public bool IsShow { get; set; } = true;
 
         /// <summary>
@@ -27,6 +30,8 @@ namespace TimeAxis
         /// 惟一号码
         /// </summary>
         public int Id { get; set; }
+
+        public Image Image { get; set; }
 
         public string Font { get; set; } = "Calibri";
 

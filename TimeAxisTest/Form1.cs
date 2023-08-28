@@ -23,8 +23,9 @@ namespace TimeAxisTest
             timeAxisMain.Ruler.Start = DateTime.Today.AddSeconds(24.5);
             Track t1 = new Track()
             {
-                Height = 30,
+                Height = 40,
                 Text = "Track1",
+                Image = Image.FromFile(@".\Image\Scenario.png"),
             };
             t1.Segments.Add(new Segment()
             {
@@ -43,6 +44,7 @@ namespace TimeAxisTest
             Track t2 = new Track()
             {
                 Text = "Track2",
+                Image = Image.FromFile(@".\Image\Sensor.png")
             };
             t2.Segments.Add(new Segment()
             {
@@ -50,7 +52,10 @@ namespace TimeAxisTest
                 Stop = DateTime.Today.AddHours(6),
                 Text = "Segment1",
             });
-            Track t3 = new Track();
+            Track t3 = new Track()
+            {
+                Text = "Track3",
+            };
             t3.Segments.Add(new Segment()
             {
                 Start = DateTime.Today.AddHours(4),
@@ -67,7 +72,10 @@ namespace TimeAxisTest
                 Stop = DateTime.Today.AddHours(24),
                 Text = "Segment1",
             });
-            Track t5 = new Track();
+            Track t5 = new Track()
+            {
+                Text = "Track5",
+            };
             t5.Segments.Add(new Segment()
             {
                 Start = DateTime.Today.AddHours(6),

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeAxis.Model;
+using TimeAxis.Properties;
 
 namespace TimeAxis
 {
@@ -77,11 +78,11 @@ namespace TimeAxis
         #endregion
 
         private const int leftPadding = 15;
-        
-        private const int imageSize = 16;
-
+        private const int leftPaddingImage = 3;
         private const int leftPaddingTrack = 24;
-        
+        private const int imageSize = 16;
+        private const int leftPaddingSegmentName = 2;
+
         private Keys keyState = Keys.None;
 
         private MouseState mouseState = MouseState.None;
@@ -116,6 +117,10 @@ namespace TimeAxis
         /// </summary>
         private double mouseToDisplayStop = 0;
 
+        /// <summary>
+        /// 鼠标悬停在隐藏按钮时对应的轨道
+        /// </summary>
+        private Track mouseHoverEyeTrack = null;
 
         /// <summary>
         /// 上标尺的游标位置（下标尺的游标位置由时间决定，并且为了保证精度，不能再引用上游标位置）
@@ -140,7 +145,8 @@ namespace TimeAxis
         private ToolStripMenuItem tsmi_SetTime3;
         private ToolStripMenuItem tsmi_ShowAllTrack;
         private ToolStripMenuItem tsmi_SegmentFill;
-        
+        private ToolTip toolTipHide = null;
+
         #region 从分割条到垂直滚动条左边之间的区域，X坐标和时间互相转化
 
         /// <summary>
@@ -249,6 +255,7 @@ namespace TimeAxis
                 graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush,
                     new Rectangle(leftPadding, (Ruler.UpperHeight - font.Height) / 2, width, height));
             }
+
             using (Brush brush = new SolidBrush(Ruler.BoxColor))
             using (Pen pen = new Pen(Ruler.BoxBorderColor, Ruler.BoxBorderWidth))
             {
@@ -337,41 +344,66 @@ namespace TimeAxis
                 int lineHeight = Ruler.Height + verticalOffset;
                 for (int row = 0; row < Tracks.Count; ++row)
                 {
-                    lineHeight += Tracks[row].Height;
-                    if (lineHeight > Ruler.Height)
+                    if (Tracks[row].IsShow)
                     {
-                        graphics.DrawLine(pen, 0, lineHeight, this.Width, lineHeight);
-                        int y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
-                        int y2 = lineHeight;
-                        using (Brush brush = new SolidBrush(Tracks[row].FontColor))
-                        using (Font font = new Font(Tracks[row].Font, Tracks[row].FontSize, Tracks[row].FontStyle))
+                        lineHeight += Tracks[row].Height;
+                        if (lineHeight > Ruler.Height)
                         {
-                            int width = SplitLine.Position - leftPaddingTrack;
-                            int height = Math.Min(font.Height, y2 - y1);
-                            width = width == 0 ? -1 : width;
-                            height = height == 0 ? -1 : height;
-                            graphics.DrawString(Tracks[row].Text, font, brush,
-                                new Rectangle(leftPaddingTrack, (y2 - y1 - font.Height) / 2 + y1, width, height));
-                        }
-                        for (int column = 0; column < Tracks[row].Segments.Count; ++column)
-                        {
-                            int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
-                            int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
-                            using (Pen segPen = new Pen(Tracks[row].Segments[column].BorderColor, Tracks[row].Segments[column].BorderWidth))
-                            using (Brush brush = new SolidBrush(Tracks[row].Segments[column].Color))
+                            graphics.DrawLine(pen, 0, lineHeight, this.Width, lineHeight);
+                            int y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
+                            int y2 = lineHeight;
+                            using (Brush brush = new SolidBrush(Tracks[row].FontColor))
+                            using (Font font = new Font(Tracks[row].Font, Tracks[row].FontSize, Tracks[row].FontStyle))
                             {
-                                graphics.FillRectangle(brush, x1, y1, x2 - x1, y2 - y1);
-                                graphics.DrawRectangle(segPen, x1, y1, x2 - x1, y2 - y1);
-                            }
-                            using (Brush brush = new SolidBrush(Tracks[row].Segments[column].FontColor))
-                            using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
-                            {
-                                int width = Math.Min(x2, this.Width) - x1 - 2;
+                                int width = SplitLine.Position - leftPaddingTrack - imageSize;
                                 int height = Math.Min(font.Height, y2 - y1);
                                 width = width == 0 ? -1 : width;
                                 height = height == 0 ? -1 : height;
-                                graphics.DrawString(Tracks[row].Segments[column].Text, font, brush,
-                                    new Rectangle(x1 + 2, (y2 - y1 - font.Height) / 2 + y1, width, height));
+                                graphics.DrawString(Tracks[row].Text, font, brush,
+                                    new Rectangle(leftPaddingTrack, (y2 - y1 - font.Height) / 2 + y1, width, height));
+                            }
+
+                            if (Tracks[row].Image != null && Tracks[row].Image.Width > 0 && Tracks[row].Image.Height > 0)
+                            {
+                                int width = Math.Min(imageSize, SplitLine.Position - leftPaddingImage);
+                                int height = Math.Min(imageSize, y2 - y1);
+                                width = width == 0 ? -1 : width;
+                                height = height == 0 ? -1 : height;
+                                graphics.DrawImage(Tracks[row].Image,
+                                    new Rectangle(leftPaddingImage, (y2 - y1 - imageSize) / 2 + y1, width, height));
+                            }
+
+                            for (int column = 0; column < Tracks[row].Segments.Count; ++column)
+                            {
+                                int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
+                                int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
+                                using (Pen segPen = new Pen(Tracks[row].Segments[column].BorderColor, Tracks[row].Segments[column].BorderWidth))
+                                using (Brush brush = new SolidBrush(Tracks[row].Segments[column].Color))
+                                {
+                                    graphics.FillRectangle(brush, x1, y1, x2 - x1, y2 - y1);
+                                    graphics.DrawRectangle(segPen, x1, y1, x2 - x1, y2 - y1);
+                                }
+
+                                using (Brush brush = new SolidBrush(Tracks[row].Segments[column].FontColor))
+                                using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
+                                {
+                                    int width = Math.Min(x2, this.Width) - x1 - leftPaddingSegmentName;
+                                    int height = Math.Min(font.Height, y2 - y1);
+                                    width = width == 0 ? -1 : width;
+                                    height = height == 0 ? -1 : height;
+                                    graphics.DrawString(Tracks[row].Segments[column].Text, font, brush,
+                                        new Rectangle(x1 + leftPaddingSegmentName, (y2 - y1 - font.Height) / 2 + y1, width, height));
+                                }
+                            }
+
+                            if (Resources.EyeHide != null)
+                            {
+                                int width = Math.Min(imageSize, SplitLine.Position - leftPaddingImage);
+                                int height = Math.Min(imageSize, y2 - y1);
+                                width = width == 0 ? -1 : width;
+                                height = height == 0 ? -1 : height;
+                                graphics.DrawImage(Resources.EyeHide,
+                                    new Rectangle(SplitLine.Position - leftPaddingImage - imageSize, (y2 - y1 - imageSize) / 2 + y1, width, height));
                             }
                         }
                     }
@@ -549,6 +581,28 @@ namespace TimeAxis
             }
         }
 
+        private bool IsMouseAtEye(int x, int y, out Track mouseHoverEye)
+        {
+            mouseHoverEye = null;
+            if (x <= SplitLine.Position && y >= Ruler.Height)
+            {
+                Track track = ClickTrack(x, y);
+                if (track != null)
+                {
+                    int x1 = Math.Max(SplitLine.Position - leftPaddingImage - imageSize, 0);
+                    int x2 = Math.Max(SplitLine.Position - leftPaddingImage, 0);
+                    if (x >= x1 && x <= x2)
+                    {
+                        mouseState = MouseState.EyeHide;
+                        Cursor = Cursors.Hand;
+                        mouseHoverEye = track;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
 
         private bool IsMouseInBox(int x, int y, out double mouseToBoxLeft_, out double mouseToBoxRight_)
         {
@@ -646,17 +700,20 @@ namespace TimeAxis
             int height = Ruler.Height + verticalOffset;
             for (int row = 0; row < Tracks.Count; ++row)
             {
-                height += Tracks[row].Height;
-                // 如果前几行被完全挡住了就不响应点击
-                if (y >= Math.Max(height - Tracks[row].Height, Ruler.Height) && y <= height)
+                if (Tracks[row].IsShow)
                 {
-                    ret = Tracks[row];
-                }
-                else
-                {
-                    for (int column = 0; column < Tracks[row].Segments.Count; ++column)
+                    height += Tracks[row].Height;
+                    // 如果前几行被完全挡住了就不响应点击
+                    if (y >= Math.Max(height - Tracks[row].Height, Ruler.Height) && y <= height)
                     {
-                        Tracks[row].Segments[column].IsSelected = false;
+                        ret = Tracks[row];
+                    }
+                    else
+                    {
+                        for (int column = 0; column < Tracks[row].Segments.Count; ++column)
+                        {
+                            Tracks[row].Segments[column].IsSelected = false;
+                        }
                     }
                 }
             }
@@ -766,6 +823,18 @@ namespace TimeAxis
                 else if (IsMouseInBox(e.X, e.Y, out mouseToDisplayStart, out mouseToDisplayStop))
                 {
                 }
+                // 判断隐藏按钮
+                else if (IsMouseAtEye(e.X, e.Y, out mouseHoverEyeTrack))
+                {
+                    //if (toolTipHide == null)
+                    //{
+                    //    toolTipHide = new ToolTip();
+                    //    toolTipHide.AutoPopDelay = 2000;
+                    //    toolTipHide.InitialDelay = 500;
+                    //    toolTipHide.ReshowDelay = 200;
+                    //}
+                    //toolTipHide.Show("Hide", this, e.Location);
+                }
                 // 判断分割线
                 else if (IsMouseAtSplitLine(e.X))
                 {
@@ -778,6 +847,7 @@ namespace TimeAxis
                 {
                     mouseState = MouseState.None;
                     Cursor = Cursors.Arrow;
+                    //toolTipHide?.Hide(this);
                 }
             }
             else if ((e.Button & MouseButtons.Left) > 0)
@@ -837,6 +907,7 @@ namespace TimeAxis
             Track track = null;
             Segment segment = null;
 
+            // 点轨道和段
             if ((e.Button & (MouseButtons.Left | MouseButtons.Right)) > 0 && e.X >= SplitLine.Position + SplitLine.Width && e.Y > Ruler.Height)
             {
                 track = ClickTrack(e.X, e.Y);
@@ -859,6 +930,7 @@ namespace TimeAxis
                     }
                 }
             }
+            // 右键轨道头
             else if ((e.Button & MouseButtons.Right) > 0 && e.X <= SplitLine.Position && e.Y > Ruler.Height)
             {
                 track = ClickTrack(e.X, e.Y);
@@ -866,6 +938,7 @@ namespace TimeAxis
                 TrackHeaderMenu.Tag = data;
                 TrackHeaderMenu.Show(MousePosition);
             }
+            // 右键标尺
             else if ((e.Button & MouseButtons.Right) > 0 && e.X >= SplitLine.Position + SplitLine.Width && e.Y <= Ruler.Height)
             {
                 data.MarkTime = LowerXPositionToTime(e.X);
@@ -873,10 +946,16 @@ namespace TimeAxis
                 RulerMenu.Tag = data;
                 RulerMenu.Show(MousePosition);
             }
+            // 右键标尺头
             else if ((e.Button & MouseButtons.Right) > 0 && e.X <= SplitLine.Position && e.Y <= Ruler.Height)
             {
                 RulerHeaderMenu.Tag = data;
                 RulerHeaderMenu.Show(MousePosition);
+            }
+            // 左键隐藏按钮
+            else if ((e.Button & MouseButtons.Left) > 0 && mouseState == MouseState.EyeHide)
+            {
+                mouseHoverEyeTrack.IsShow = false;
             }
             else
             {
@@ -886,6 +965,7 @@ namespace TimeAxis
             switch (mouseState)
             {
                 case MouseState.ClickData:
+                case MouseState.EyeHide:
                     Invalidate();
                     break;
 
@@ -911,6 +991,27 @@ namespace TimeAxis
                 HoriScroll(e.Delta);
             }
         }
+
+        //protected override void OnMouseHover(EventArgs e)
+        //{
+        //    base.OnMouseHover(e);
+        //    if (mouseState == MouseState.EyeHide)
+        //    {
+        //        if (toolTipHide == null)
+        //        {
+        //            toolTipHide = new ToolTip();
+        //            toolTipHide.AutoPopDelay = 2000;
+        //            toolTipHide.InitialDelay = 2000;
+        //            toolTipHide.ReshowDelay = 200;
+        //        }
+        //        toolTipHide.Show("Hide", this, PointToClient(MousePosition));
+        //    }
+        //    else
+        //    {
+        //        toolTipHide?.Hide(this);
+        //    }
+        //}
+
 
         #region 右键菜单
 

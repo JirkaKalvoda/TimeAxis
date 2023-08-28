@@ -26,5 +26,7 @@ namespace TimeAxis
         BoxRight = 6,
 
         Box = 7,
+
+        EyeHide = 8,
     }
 }

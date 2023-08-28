@@ -59,6 +59,11 @@
     <Compile Include="Model\SplitLine.cs" />
     <Compile Include="Model\Tick.cs" />
     <Compile Include="Model\Track.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="TimeAxisMain.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -66,10 +71,16 @@
       <DependentUpon>TimeAxisMain.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="TimeAxisMain.resx">
       <DependentUpon>TimeAxisMain.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Image\EyeHide.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

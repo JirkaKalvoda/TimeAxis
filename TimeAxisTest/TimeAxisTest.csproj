@@ -86,4 +86,9 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>set out=$(ProjectDir)$(OutDir)Image
+md %25out%25
+xcopy /e /y $(ProjectDir)Image %25out%25</PostBuildEvent>
+  </PropertyGroup>
 </Project>
