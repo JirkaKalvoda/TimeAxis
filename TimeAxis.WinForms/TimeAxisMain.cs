@@ -15,10 +15,11 @@ using TimeAxis.Properties;
 
 namespace TimeAxis
 {
+    /// <summary>
+    /// 时间轴和轨道控件
+    /// </summary>
     public partial class TimeAxisMain : UserControl
     {
-        #region 公开
-
         #region 可配置项
 
         public Color BackColorLeft { get; set; } = Color.White;
@@ -28,8 +29,6 @@ namespace TimeAxis
         public int BorderWidth { get; set; } = 1;
 
         public Color BorderColor { get; set; } = Color.DarkGray;
-
-        public int ScrollWidth { get; set; } = 15;
 
         public SplitLine SplitLine { get; set; } = new SplitLine();
 
@@ -67,21 +66,64 @@ namespace TimeAxis
             UpperTick.TimeToX = UpperTimeToXPosition;
             LowerTick.TimeToX = LowerTimeToXPosition;
             // 滚动条不会被清除
-            this.Controls.Add(vScrollBar);
-            vScrollBar.Width = ScrollWidth;
-            vScrollBar.SmallChange = 5;
-            vScrollBar.ValueChanged += VerticalScrollBar_ValueChanged;
-
+            vertBar = new ScrollScaleBar();
+            horiBar = new ScrollScaleBar();
+            this.Controls.Add(vertBar);
+            this.Controls.Add(horiBar);
+            vertBar.IsVertical = true;
+            horiBar.IsVertical = false;
             InitRightClickMenu();
+            this.Load += TimeAxisMain_Load;
         }
 
-        #endregion
+        private void TimeAxisMain_Load(object sender, EventArgs e)
+        {
+            vertBar.Thickness = 14;
+            horiBar.Thickness = 14;
+            vertBar.SmallChange = 5;
+            horiBar.SmallChange = 5;
+            vertBar.ScaleMax = 7;
+            horiBar.ScaleMax = 100;
+            vertBar.BarMoved += VertBar_ValueChanged;
+            vertBar.RingMinDragged += VertBar_RingMinDragged;
+            vertBar.RingMaxDragged += VertBar_RingMaxDragged;
+            horiBar.BarMoved += HoriBar_ValueChanged;
+            horiBar.RingMinDragged += HoriBar_ValueChanged;
+            horiBar.RingMaxDragged += HoriBar_ValueChanged;
+            vertBar.KeyDown += TransferKeyDown;
+            horiBar.KeyDown += TransferKeyDown;
+            vertBar.KeyUp += TransferKeyUp;
+            horiBar.KeyUp += TransferKeyUp;
+        }
 
+        /// <summary>
+        /// 标尺头文本距离左边像素
+        /// </summary>
         private const int leftPadding = 15;
+
+        /// <summary>
+        /// 轨道左图片距离左边像素
+        /// </summary>
         private const int leftPaddingImage = 3;
+
+        /// <summary>
+        /// 轨道名距离左边像素
+        /// </summary>
         private const int leftPaddingTrack = 24;
+
+        /// <summary>
+        /// 图片边长
+        /// </summary>
         private const int imageSize = 16;
+
+        /// <summary>
+        /// 数据段名距离数据段左边像素
+        /// </summary>
         private const int leftPaddingSegmentName = 2;
+
+        /// <summary>
+        /// 行高最小值
+        /// </summary>
         private const int rowHeightMin = 10;
 
         private Keys keyState = Keys.None;
@@ -89,9 +131,9 @@ namespace TimeAxis
         private MouseState mouseState = MouseState.None;
 
         /// <summary>
-        /// 纵向偏移量，纵向滚动条在最上时第1行显示完整该值=0，纵向滚动条往下拉时前几行被标尺等挡住整该值<![CDATA[<]]>0，运算取加法
+        /// 纵向偏移量，纵向滚动条在最上时第1行显示完整该值=0，纵向滚动条往下拉时前几行被标尺等挡住整该值<![CDATA[<]]>0
         /// </summary>
-        private int verticalOffset = 0;
+        private float verticalOffset = 0;
 
         /// <summary>
         /// 鼠标距离多远时改变指针形状
@@ -106,7 +148,7 @@ namespace TimeAxis
         /// <summary>
         /// 鼠标悬停的横线对应的行的上边Y坐标
         /// </summary>
-        private int aboveHeight = 0;
+        private float aboveHeight = 0;
 
         /// <summary>
         /// 鼠标悬停在上标尺方框里时距离左边的时间长度
@@ -138,7 +180,12 @@ namespace TimeAxis
             }
         }
 
-        private VScrollBar vScrollBar = new VScrollBar();
+        private bool isDragRingMin = false;
+
+        private bool isDragRingMax = false;
+
+        private ScrollScaleBar vertBar;
+        private ScrollScaleBar horiBar;
         private ToolStripMenuItem tsmi_ResetScale;
         private ToolStripMenuItem tsmi_ResetScale2;
         private ToolStripMenuItem tsmi_SetTime;
@@ -146,7 +193,6 @@ namespace TimeAxis
         private ToolStripMenuItem tsmi_SetTime3;
         private ToolStripMenuItem tsmi_ShowAllTrack;
         private ToolStripMenuItem tsmi_SegmentFill;
-        private ToolTip toolTipHide = null;
 
         #region 从分割条到垂直滚动条左边之间的区域，X坐标和时间互相转化
 
@@ -159,7 +205,7 @@ namespace TimeAxis
         {
             return (int) ((time - Ruler.DisplayStart).TotalSeconds /
                    (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds *
-                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
+                   (this.Width - vertBar.Thickness - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
         }
 
         /// <summary>
@@ -170,7 +216,7 @@ namespace TimeAxis
         private DateTime LowerXPositionToTime(int x)
         {
             return Ruler.DisplayStart.AddSeconds(1d * (x - SplitLine.Position - SplitLine.Width) / 
-                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width) *
+                   (this.Width - vertBar.Thickness - SplitLine.Position - SplitLine.Width) *
                    (Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds);
         }
 
@@ -183,7 +229,7 @@ namespace TimeAxis
         {
             return (int) ((time - Ruler.Start).TotalSeconds /
                    (Ruler.Stop - Ruler.Start).TotalSeconds *
-                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
+                   (this.Width - vertBar.Thickness - SplitLine.Position - SplitLine.Width)) + SplitLine.Position + SplitLine.Width;
         }
 
         /// <summary>
@@ -194,7 +240,7 @@ namespace TimeAxis
         private DateTime UpperXPositionToTime(int x)
         {
             return Ruler.Start.AddSeconds(1d * (x - SplitLine.Position - SplitLine.Width) /
-                   (this.Width - vScrollBar.Width - SplitLine.Position - SplitLine.Width) *
+                   (this.Width - vertBar.Thickness - SplitLine.Position - SplitLine.Width) *
                    (Ruler.Stop - Ruler.Start).TotalSeconds);
         }
 
@@ -222,7 +268,7 @@ namespace TimeAxis
             graphics.Clear(BackColorRight);
             DrawBackColor(graphics);
             DrawRuler(graphics);
-            DrawVerticalScrollBar();
+            DrawScrollBar();
             DrawTrack(graphics);
             DrawMarkLine(graphics);
             DrawRulerTick(graphics, UpperTick);
@@ -241,22 +287,25 @@ namespace TimeAxis
                 graphics.DrawLine(pen, 0, Ruler.Height, this.Width, Ruler.Height);
                 graphics.DrawLine(pen, 0, Ruler.UpperHeight, this.Width, Ruler.UpperHeight);
             }
+
+            // 标尺头文本
             using (Font font = new Font(Ruler.Font, Ruler.FontSize, Ruler.FontStyle))
             using (Brush brush = new SolidBrush(Ruler.FontColor))
             {
                 // 矩形某个维度是0时不起作用
                 int width = SplitLine.Position - leftPadding;
-                int height = Math.Min(font.Height, Ruler.LowerHeight);
+                float height = Math.Min(font.Height, Ruler.LowerHeight);
                 width = width == 0 ? -1 : width;
                 height = height == 0 ? -1 : height;
                 graphics.DrawString(MarkLine.Time.ToString("dd MMM yyyy HH:mm:ss.fff", DateTimeFormatInfo.InvariantInfo), font, brush,
-                    new Rectangle(leftPadding, (Ruler.LowerHeight - font.Height) / 2 + Ruler.UpperHeight, width, height));
+                    new RectangleF(leftPadding, (Ruler.LowerHeight - font.Height) / 2 + Ruler.UpperHeight, width, height));
                 height = Math.Min(font.Height, Ruler.UpperHeight);
                 height = height == 0 ? -1 : height;
                 graphics.DrawString("Scale: " + Ruler.Scale.ToString("f3"), font, brush,
-                    new Rectangle(leftPadding, (Ruler.UpperHeight - font.Height) / 2, width, height));
+                    new RectangleF(leftPadding, (Ruler.UpperHeight - font.Height) / 2, width, height));
             }
 
+            // 上标尺的可拖动窗口
             using (Brush brush = new SolidBrush(Ruler.BoxColor))
             using (Pen pen = new Pen(Ruler.BoxBorderColor, Ruler.BoxBorderWidth))
             {
@@ -269,11 +318,11 @@ namespace TimeAxis
             UpperTick.Start = Ruler.Start;
             UpperTick.Stop = Ruler.Stop;
             UpperTick.XStart = SplitLine.Width + SplitLine.Position;
-            UpperTick.XStop = this.Width - vScrollBar.Width;
+            UpperTick.XStop = this.Width - vertBar.Thickness;
             LowerTick.Start = Ruler.DisplayStart;
             LowerTick.Stop = Ruler.DisplayStop;
             LowerTick.XStart = SplitLine.Width + SplitLine.Position;
-            LowerTick.XStop = this.Width - vScrollBar.Width;
+            LowerTick.XStop = this.Width - vertBar.Thickness;
         }
 
 
@@ -307,8 +356,8 @@ namespace TimeAxis
                 while (true)
                 {
                     int x = tick.TimeToX(startDrawTime);
-                    int y1;
-                    int y2;
+                    float y1;
+                    float y2;
                     if (x <= tick.XStop)
                     {
                         y1 = tick.IsUpperAlign ? Ruler.UpperHeight : Ruler.Height;
@@ -342,7 +391,7 @@ namespace TimeAxis
             using (Pen pen = new Pen(BorderColor, BorderWidth))
             {
                 // 前几行有可能被标尺行等挡住，只有下边不被挡住的才绘制
-                int lineHeight = Ruler.Height + verticalOffset;
+                float lineHeight = Ruler.Height + verticalOffset;
                 for (int row = 0; row < Tracks.Count; ++row)
                 {
                     if (Tracks[row].IsShow)
@@ -351,29 +400,33 @@ namespace TimeAxis
                         if (lineHeight > Ruler.Height)
                         {
                             graphics.DrawLine(pen, 0, lineHeight, this.Width, lineHeight);
-                            int y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
-                            int y2 = lineHeight;
+                            float y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
+                            float y2 = lineHeight;
+
+                            // 轨道名
                             using (Brush brush = new SolidBrush(Tracks[row].FontColor))
                             using (Font font = new Font(Tracks[row].Font, Tracks[row].FontSize, Tracks[row].FontStyle))
                             {
                                 int width = SplitLine.Position - leftPaddingTrack - imageSize;
-                                int height = Math.Min(font.Height, y2 - y1);
+                                float height = Math.Min(font.Height, y2 - y1);
                                 width = width == 0 ? -1 : width;
                                 height = height == 0 ? -1 : height;
                                 graphics.DrawString(Tracks[row].Text, font, brush,
-                                    new Rectangle(leftPaddingTrack, (y2 - y1 - font.Height) / 2 + y1, width, height));
+                                    new RectangleF(leftPaddingTrack, (y2 - y1 - font.Height) / 2 + y1, width, height));
                             }
 
+                            // 轨道图片
                             if (Tracks[row].Image != null && Tracks[row].Image.Width > 0 && Tracks[row].Image.Height > 0)
                             {
                                 int width = Math.Min(imageSize, SplitLine.Position - leftPaddingImage);
-                                int height = Math.Min(imageSize, y2 - y1);
+                                float height = Math.Min(imageSize, y2 - y1);
                                 width = width == 0 ? -1 : width;
                                 height = height == 0 ? -1 : height;
                                 graphics.DrawImage(Tracks[row].Image,
-                                    new Rectangle(leftPaddingImage, (y2 - y1 - imageSize) / 2 + y1, width, height));
+                                    new RectangleF(leftPaddingImage, (y2 - y1 - imageSize) / 2 + y1, width, height));
                             }
 
+                            // 数据段
                             for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                             {
                                 int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
@@ -389,22 +442,23 @@ namespace TimeAxis
                                 using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
                                 {
                                     int width = Math.Min(x2, this.Width) - x1 - leftPaddingSegmentName;
-                                    int height = Math.Min(font.Height, y2 - y1);
+                                    float height = Math.Min(font.Height, y2 - y1);
                                     width = width == 0 ? -1 : width;
                                     height = height == 0 ? -1 : height;
                                     graphics.DrawString(Tracks[row].Segments[column].Text, font, brush,
-                                        new Rectangle(x1 + leftPaddingSegmentName, (y2 - y1 - font.Height) / 2 + y1, width, height));
+                                        new RectangleF(x1 + leftPaddingSegmentName, (y2 - y1 - font.Height) / 2 + y1, width, height));
                                 }
                             }
 
+                            // 隐藏图片
                             if (Resources.EyeHide != null)
                             {
                                 int width = Math.Min(imageSize, SplitLine.Position - leftPaddingImage);
-                                int height = Math.Min(imageSize, y2 - y1);
+                                float height = Math.Min(imageSize, y2 - y1);
                                 width = width == 0 ? -1 : width;
                                 height = height == 0 ? -1 : height;
                                 graphics.DrawImage(Resources.EyeHide,
-                                    new Rectangle(SplitLine.Position - leftPaddingImage - imageSize, (y2 - y1 - imageSize) / 2 + y1, width, height));
+                                    new RectangleF(SplitLine.Position - leftPaddingImage - imageSize, (y2 - y1 - imageSize) / 2 + y1, width, height));
                             }
                         }
                     }
@@ -461,32 +515,139 @@ namespace TimeAxis
             }
         }
 
-        private void DrawVerticalScrollBar()
+        private void DrawScrollBar()
         {
-            vScrollBar.Location = new Point(this.Width - vScrollBar.Width, Ruler.Height);
-            vScrollBar.Height = this.Height - Ruler.Height;
-            vScrollBar.Minimum = 0;
-            int trackHeight = 0;
+            vertBar.Location = new Point(this.Width - vertBar.Thickness, (int) Ruler.Height);
+            vertBar.Length = (int) (this.Height - Ruler.Height - horiBar.Thickness);
+            horiBar.Location  = new Point(SplitLine.Position + SplitLine.Width, this.Height - horiBar.Thickness);
+            horiBar.Length = this.Width - SplitLine.Position - SplitLine.Width - vertBar.Thickness;
+            
+            // 新1帧的显示总高度
+            float trackHeight = 0;
             for (int row = 0; row < Tracks.Count; ++row)
             {
-                trackHeight += Tracks[row].Height;
+                if (Tracks[row].IsShow)
+                {
+                    trackHeight += Tracks[row].Height;
+                }
             }
-            if (trackHeight <= this.Height - Ruler.Height)
+            // 不需要放大和平移
+            if (trackHeight <= this.Height - Ruler.Height - horiBar.Thickness)
             {
-                verticalOffset = 0;
-                vScrollBar.Maximum = this.Height - Ruler.Height;
-                vScrollBar.LargeChange = this.Height - Ruler.Height;
+                vertBar.DisplayStart = 0;
+                vertBar.DisplayStop = trackHeight;
             }
             else
             {
-                vScrollBar.Maximum = trackHeight;
-                vScrollBar.LargeChange = this.Height - Ruler.Height;
+                // 拖最小端圆环或者滚轮缩放
+                if (isDragRingMin)
+                {
+                    vertBar.DisplayStart = trackHeight / (vertBar.Stop - vertBar.Start) * vertBar.DisplayStart;
+                    vertBar.DisplayStop = Math.Min(trackHeight, vertBar.DisplayStart + this.Height - Ruler.Height - horiBar.Thickness);
+                }
+                // 拖最大端圆环
+                else if (!isDragRingMin && isDragRingMax)
+                {
+                    vertBar.DisplayStop = trackHeight / (vertBar.Stop - vertBar.Start) * vertBar.DisplayStop;
+                    vertBar.DisplayStart = Math.Max(0, vertBar.DisplayStop - (this.Height - Ruler.Height - horiBar.Thickness));
+                }
+                // 拖滚动条或者滚轮平移
+                // 当滚动条放大拉到最下时，隐藏行，会有溢出，所以限制了显示范围
+                else
+                {
+                    double d = vertBar.DisplayStop - vertBar.DisplayStart;
+                    if (vertBar.DisplayStop > trackHeight)
+                    {
+                        vertBar.DisplayStop = trackHeight;
+                        vertBar.DisplayStart = vertBar.DisplayStop - d;
+                    }
+                    else if (vertBar.DisplayStart < 0)
+                    {
+                        vertBar.DisplayStart = 0;
+                        vertBar.DisplayStop = vertBar.DisplayStart + d;
+                    }
+                }
             }
+            isDragRingMin = false;
+            isDragRingMax = false;
+            vertBar.Start = 0;
+            vertBar.Stop = trackHeight;
+            verticalOffset = -(float) vertBar.DisplayStart;
+            vertBar.Refresh();
+
+            horiBar.Start = 0;
+            horiBar.Stop = (Ruler.Stop - Ruler.Start).TotalSeconds;
+            horiBar.DisplayStart = (Ruler.DisplayStart - Ruler.Start).TotalSeconds;
+            horiBar.DisplayStop = (Ruler.DisplayStop - Ruler.Start).TotalSeconds;
+            horiBar.Refresh();
         }
 
-        private void VerticalScrollBar_ValueChanged(object sender, EventArgs e)
+        #endregion
+
+        #region 鼠标操作里面的滚动条控件
+
+        /// <summary>
+        /// 垂直滚动条拖动平移事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void VertBar_ValueChanged(object sender, EventArgs e)
         {
-            verticalOffset = -vScrollBar.Value;
+            Invalidate();
+        }
+
+        /// <summary>
+        /// 水平滚动条值变化事件，主要由标尺控制
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void HoriBar_ValueChanged(object sender, EventArgs e)
+        {
+            Ruler.DisplayStart = Ruler.Start.AddSeconds(horiBar.DisplayStart);
+            Ruler.DisplayStop = Ruler.Start.AddSeconds(horiBar.DisplayStop);
+            Invalidate();
+            Ruler.UpdateScale();
+        }
+
+        /// <summary>
+        /// 垂直滚动条拖最小端圆环事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void VertBar_RingMinDragged(object sender, EventArgs e)
+        {
+            float trackHeight = 0;
+            for (int row = 0; row < Tracks.Count; ++row)
+            {
+                Tracks[row].Height = Math.Max(rowHeightMin, (float) (Tracks[row].Height / vertBar.DisplayChangeRate));
+                if (Tracks[row].IsShow)
+                {
+                    trackHeight += Tracks[row].Height;
+                }
+            }
+            isDragRingMin = true;
+            isDragRingMax = false;
+            Invalidate();
+        }
+
+        /// <summary>
+        /// 垂直滚动条拖最大端圆环事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void VertBar_RingMaxDragged(object sender, EventArgs e)
+        {
+            float trackHeight = 0;
+            for (int row = 0; row < Tracks.Count; ++row)
+            {
+                Tracks[row].Height = Math.Max(rowHeightMin, (float) (Tracks[row].Height / vertBar.DisplayChangeRate));
+                if (Tracks[row].IsShow)
+                {
+                    trackHeight += Tracks[row].Height;
+                }
+            }
+            isDragRingMin = false;
+            isDragRingMax = true;
             Invalidate();
         }
 
@@ -525,12 +686,12 @@ namespace TimeAxis
             }
         }
 
-        private bool IsMouseAtRowLine(int y, out Row hoverRow_, out int aboveHeight_)
+        private bool IsMouseAtRowLine(int y, out Row hoverRow_, out float aboveHeight_)
         {
             List<Row> rows = new List<Row>();
             rows.Add(Ruler);
             rows.AddRange(Tracks);
-            int sumHeight = 0;
+            float sumHeight = 0;
             aboveHeight_ = 0;
             hoverRow_ = null;
             for (int r = 0; r < rows.Count; ++r)
@@ -538,9 +699,9 @@ namespace TimeAxis
                 sumHeight += rows[r].Height;
                 if (r == 1)
                 {
-                    sumHeight -= verticalOffset;
+                    sumHeight += verticalOffset;
                 }
-                aboveHeight_ = sumHeight - rows[r].Height;
+                aboveHeight_ = (sumHeight - rows[r].Height);
                 if (Math.Abs(y - sumHeight) <= threshold)
                 {
                     if (r == 0 || sumHeight > Ruler.Height)
@@ -631,13 +792,13 @@ namespace TimeAxis
         {
             SplitLine.Position = x;
             SplitLine.Position = Math.Max(SplitLine.Position, 10);
-            SplitLine.Position = Math.Min(SplitLine.Position, this.Width - vScrollBar.Width - 10);
+            SplitLine.Position = Math.Min(SplitLine.Position, this.Width - vertBar.Thickness - 10);
         }
 
         private void DragMarkLine(int x, int y)
         {
             x = Math.Max(x, SplitLine.Position + SplitLine.Width);
-            x = Math.Min(x, this.Width - vScrollBar.Width);
+            x = Math.Min(x, this.Width - vertBar.Thickness);
             if (y <= Ruler.UpperHeight)
             {
                 MarkLinePosition = x;
@@ -649,7 +810,7 @@ namespace TimeAxis
         }
 
 
-        private void DragRowLine(int y, Row hoverRow, int aboveHeight)
+        private void DragRowLine(int y)
         {
             hoverRow.Height = Math.Max(y - aboveHeight, rowHeightMin);
         }
@@ -657,24 +818,24 @@ namespace TimeAxis
 
         private void DragBoxLeft(int x)
         {
-            Ruler.DisplayStart = UpperXPositionToTime(x);
-            Ruler.DisplayStart = DateTimeExt.Min(DateTimeExt.Max(Ruler.DisplayStart, Ruler.Start), Ruler.DisplayStop);
-            if ((Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds < 10)
-            {
-                Ruler.DisplayStart = Ruler.DisplayStop.AddSeconds(-10);
-            }
+            Ruler.DisplayStart = DateTimeExt.Min(DateTimeExt.Max(UpperXPositionToTime(x), Ruler.Start), Ruler.DisplayStop);
             Ruler.UpdateScale();
+            if (Ruler.Scale >= horiBar.ScaleMax + 0.01 || Ruler.DisplayStart >= Ruler.DisplayStop)
+            {
+                Ruler.DisplayStart = Ruler.DisplayStop.AddSeconds(-(Ruler.Stop - Ruler.Start).TotalSeconds / horiBar.ScaleMax);
+                Ruler.UpdateScale();
+            }
         }
 
         private void DragBoxRight(int x)
         {
-            Ruler.DisplayStop = UpperXPositionToTime(x);
-            Ruler.DisplayStop = DateTimeExt.Max(DateTimeExt.Min(Ruler.DisplayStop, Ruler.Stop), Ruler.DisplayStart);
-            if ((Ruler.DisplayStop - Ruler.DisplayStart).TotalSeconds < 10)
-            {
-                Ruler.DisplayStop = Ruler.DisplayStart.AddSeconds(10);
-            }
+            Ruler.DisplayStop = DateTimeExt.Max(DateTimeExt.Min(UpperXPositionToTime(x), Ruler.Stop), Ruler.DisplayStart);
             Ruler.UpdateScale();
+            if (Ruler.Scale >= horiBar.ScaleMax + 0.01 || Ruler.DisplayStart >= Ruler.DisplayStop)
+            {
+                Ruler.DisplayStop = Ruler.DisplayStart.AddSeconds((Ruler.Stop - Ruler.Start).TotalSeconds / horiBar.ScaleMax);
+                Ruler.UpdateScale();
+            }
         }
 
         private void DragBox(DateTime x)
@@ -698,7 +859,7 @@ namespace TimeAxis
         private Track ClickTrack(int x, int y)
         {
             Track ret = null;
-            int height = Ruler.Height + verticalOffset;
+            float height = Ruler.Height + verticalOffset;
             for (int row = 0; row < Tracks.Count; ++row)
             {
                 if (Tracks[row].IsShow)
@@ -757,31 +918,41 @@ namespace TimeAxis
         {
             if (delta < 0)
             {
-                for (int i = 0; i < Tracks.Count; ++i)
+                if (vertBar.Scale >= vertBar.ScaleMax)
                 {
-                    Tracks[i].Height = (int) (Tracks[i].Height * 1.2);
+                    return;
+                }
+                for (int row = 0; row < Tracks.Count; ++row)
+                {
+                    Tracks[row].Height = Tracks[row].Height * 1.2f;
                 }
             }
             else if (delta > 0)
             {
-                for (int i = 0; i < Tracks.Count; ++i)
+                for (int row = 0; row < Tracks.Count; ++row)
                 {
-                    Tracks[i].Height = Math.Max(rowHeightMin, (int) (Tracks[i].Height / 1.2));
+                    Tracks[row].Height = Math.Max(rowHeightMin, Tracks[row].Height / 1.2f);
                 }
             }
+            isDragRingMin = true;
+            isDragRingMax = true;
             Invalidate();
         }
 
         private void VertScroll(int delta)
         {
+            double pixels = vertBar.DisplayStop - vertBar.DisplayStart;
             if (delta < 0)
             {
-                vScrollBar.Value = Math.Min(vScrollBar.Value + vScrollBar.SmallChange, vScrollBar.Maximum - vScrollBar.LargeChange + 1);
+                vertBar.DisplayStop = Math.Min(vertBar.Stop, vertBar.DisplayStop + vertBar.SmallChange);
+                vertBar.DisplayStart = vertBar.DisplayStop - pixels;
             }
             else if (delta > 0)
             {
-                vScrollBar.Value = Math.Max(vScrollBar.Value - vScrollBar.SmallChange, vScrollBar.Minimum);
+                vertBar.DisplayStart = Math.Max(vertBar.Start, vertBar.DisplayStart - vertBar.SmallChange);
+                vertBar.DisplayStop = vertBar.DisplayStart + pixels;
             }
+            Invalidate();
         }
 
         
@@ -789,7 +960,7 @@ namespace TimeAxis
         {
             if (delta < 0)
             {
-                Ruler.Scale += 0.25;
+                Ruler.Scale = Math.Min(Ruler.Scale + 0.25, horiBar.ScaleMax);
             }
             else if (delta > 0)
             {
@@ -832,47 +1003,25 @@ namespace TimeAxis
             if (e.Button == MouseButtons.None)
             {
                 // 判断游标
-                if (IsMouseAtMarkLine(e.X, e.Y))
-                {
-                }
+                if (IsMouseAtMarkLine(e.X, e.Y)) { }
                 // 判断上标尺方框边界
-                else if (IsMouseAtBoxBorder(e.X, e.Y))
-                {
-                }
+                else if (IsMouseAtBoxBorder(e.X, e.Y)) { }
                 // 判断上标尺方框
-                else if (IsMouseInBox(e.X, e.Y, out mouseToDisplayStart, out mouseToDisplayStop))
-                {
-                }
+                else if (IsMouseInBox(e.X, e.Y, out mouseToDisplayStart, out mouseToDisplayStop)) { }
                 // 判断隐藏按钮
-                else if (IsMouseAtEye(e.X, e.Y, out mouseHoverEyeTrack))
-                {
-                    //if (toolTipHide == null)
-                    //{
-                    //    toolTipHide = new ToolTip();
-                    //    toolTipHide.AutoPopDelay = 2000;
-                    //    toolTipHide.InitialDelay = 500;
-                    //    toolTipHide.ReshowDelay = 200;
-                    //}
-                    //toolTipHide.Show("Hide", this, e.Location);
-                }
+                else if (IsMouseAtEye(e.X, e.Y, out mouseHoverEyeTrack)) { }
                 // 判断分割线
-                else if (IsMouseAtSplitLine(e.X))
-                {
-                }
+                else if (IsMouseAtSplitLine(e.X)) { }
                 // 判断横线
-                else if (IsMouseAtRowLine(e.Y, out hoverRow, out aboveHeight))
-                {
-                }
+                else if (IsMouseAtRowLine(e.Y, out hoverRow, out aboveHeight)) { }
                 else
                 {
                     mouseState = MouseState.None;
                     Cursor = Cursors.Arrow;
-                    //toolTipHide?.Hide(this);
                 }
             }
             else if ((e.Button & MouseButtons.Left) > 0)
             {
-                
                 switch (mouseState)
                 {
                     case MouseState.MarkLine:
@@ -884,7 +1033,7 @@ namespace TimeAxis
                         break;
 
                     case MouseState.RowLine:
-                        DragRowLine(e.Y, hoverRow, aboveHeight);
+                        DragRowLine(e.Y);
                         break;
 
                     case MouseState.BoxLeft:
@@ -1016,26 +1165,6 @@ namespace TimeAxis
             }
         }
 
-        //protected override void OnMouseHover(EventArgs e)
-        //{
-        //    base.OnMouseHover(e);
-        //    if (mouseState == MouseState.EyeHide)
-        //    {
-        //        if (toolTipHide == null)
-        //        {
-        //            toolTipHide = new ToolTip();
-        //            toolTipHide.AutoPopDelay = 2000;
-        //            toolTipHide.InitialDelay = 2000;
-        //            toolTipHide.ReshowDelay = 200;
-        //        }
-        //        toolTipHide.Show("Hide", this, PointToClient(MousePosition));
-        //    }
-        //    else
-        //    {
-        //        toolTipHide?.Hide(this);
-        //    }
-        //}
-
 
         #region 右键菜单
 
@@ -1095,9 +1224,9 @@ namespace TimeAxis
 
         private void Tsmi_ShowAllTrack_Click(object sender, EventArgs e)
         {
-            for (int i = 0; i < Tracks.Count; ++i)
+            for (int row = 0; row < Tracks.Count; ++row)
             {
-                Tracks[i].IsShow = true;
+                Tracks[row].IsShow = true;
             }
             Invalidate();
         }
@@ -1130,7 +1259,7 @@ namespace TimeAxis
             {
                 case Keys.ShiftKey:
                 case Keys.ControlKey:
-                case Keys.Menu:     // alt
+                case Keys.Menu:     // Alt
                     keyState = e.KeyCode;
                     break;
 
@@ -1145,6 +1274,31 @@ namespace TimeAxis
             base.OnKeyUp(e);
             keyState = Keys.None;
         }
+
+
+        #region 之前用VScrollBar一切正常，换自定义滚动条后焦点总在定义滚动条上，Form.KeyPreview无效，ProcessCmdKey没有弹起和组合键，其余按键事件不响应
+
+        /// <summary>
+        /// 把主控件里面的自定义控件的<see cref="KeyDown"/>传递到主控件，否则主控件<see cref="KeyDown"/>不生效，焦点在里面的自定义控件，原因未知
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TransferKeyDown(object sender, KeyEventArgs e)
+        {
+            OnKeyDown(e);
+        }
+
+        /// <summary>
+        /// 把主控件里面的自定义控件的<see cref="KeyUp"/>传递到主控件，否则主控件<see cref="KeyUp"/>不生效，焦点在里面的自定义控件，原因未知
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TransferKeyUp(object sender, KeyEventArgs e)
+        {
+            OnKeyUp(e);
+        }
+
+        #endregion
 
         #endregion
     }

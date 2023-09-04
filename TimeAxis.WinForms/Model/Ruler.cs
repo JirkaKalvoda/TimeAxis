@@ -41,7 +41,7 @@ namespace TimeAxis
 
         public int BoxBorderWidth { get; set; } = 2;
 
-        public int UpperHeight
+        public float UpperHeight
         {
             get
             {
@@ -49,7 +49,7 @@ namespace TimeAxis
             }
         }
 
-        public int LowerHeight
+        public float LowerHeight
         {
             get
             {

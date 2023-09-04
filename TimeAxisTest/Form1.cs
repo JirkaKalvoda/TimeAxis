@@ -17,6 +17,7 @@ namespace TimeAxisTest
         {
             InitializeComponent();
             this.StartPosition = FormStartPosition.CenterScreen;
+            //this.KeyPreview = true;
             TimeAxisMain timeAxisMain = new TimeAxisMain();
             this.Controls.Add(timeAxisMain);
             timeAxisMain.Dock = DockStyle.Fill;

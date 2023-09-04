@@ -31,6 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\TimeAxis.WinForms.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -49,12 +50,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Control\ScrollScaleBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Control\ScrollScaleBar.Designer.cs">
+      <DependentUpon>ScrollScaleBar.cs</DependentUpon>
+    </Compile>
     <Compile Include="Enum\MouseState.cs" />
     <Compile Include="Method\DateTimeExt.cs" />
     <Compile Include="Model\MarkLine.cs" />
     <Compile Include="Model\RightClickData.cs" />
     <Compile Include="Model\Row.cs" />
     <Compile Include="Model\Ruler.cs" />
+    <Compile Include="Model\ScrollValueChangedEventArgs.cs" />
     <Compile Include="Model\Segment.cs" />
     <Compile Include="Model\SplitLine.cs" />
     <Compile Include="Model\Tick.cs" />
@@ -71,6 +79,9 @@
       <DependentUpon>TimeAxisMain.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Control\ScrollScaleBar.resx">
+      <DependentUpon>ScrollScaleBar.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -82,5 +93,6 @@
   <ItemGroup>
     <None Include="Image\EyeHide.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

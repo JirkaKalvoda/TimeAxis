@@ -28,5 +28,16 @@ namespace TimeAxis
         Box = 7,
 
         EyeHide = 8,
+
+        ScrollArrowMin = 128,
+
+        ScrollArrowMax = 129,
+
+        ScrollRingMin = 130,
+
+        ScrollRingMax = 131,
+
+        ScrollBar = 132,
+
     }
 }
