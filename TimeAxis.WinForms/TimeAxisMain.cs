@@ -126,6 +126,16 @@ namespace TimeAxis
         /// </summary>
         private const int rowHeightMin = 10;
 
+        /// <summary>
+        /// 鼠标距离多远时改变指针形状
+        /// </summary>
+        private const float threshold = 5;
+
+        /// <summary>
+        /// 轨道和数据段在界外绘制范围，形成遮挡并且避免到1亿像素溢出
+        /// </summary>
+        private const int outBoundary = 20;
+
         private Keys keyState = Keys.None;
 
         private MouseState mouseState = MouseState.None;
@@ -134,11 +144,6 @@ namespace TimeAxis
         /// 纵向偏移量，纵向滚动条在最上时第1行显示完整该值=0，纵向滚动条往下拉时前几行被标尺等挡住整该值<![CDATA[<]]>0
         /// </summary>
         private float verticalOffset = 0;
-
-        /// <summary>
-        /// 鼠标距离多远时改变指针形状
-        /// </summary>
-        private float threshold = 5;
 
         /// <summary>
         /// 鼠标悬停的横线对应的行
@@ -266,14 +271,16 @@ namespace TimeAxis
         private void RefreshPage(Graphics graphics)
         {
             graphics.Clear(BackColorRight);
+            DrawScrollBar();
+            DrawTrackRight(graphics);
             DrawBackColor(graphics);
             DrawRuler(graphics);
-            DrawScrollBar();
-            DrawTrack(graphics);
+            DrawTrackLeft(graphics);
             DrawMarkLine(graphics);
             DrawRulerTick(graphics, UpperTick);
             DrawRulerTick(graphics, LowerTick);
             DrawSplitLine(graphics);
+            DrawBackColor2(graphics);
         }
 
         private void DrawRuler(Graphics graphics)
@@ -382,7 +389,7 @@ namespace TimeAxis
 
 
 
-        private void DrawTrack(Graphics graphics)
+        private void DrawTrackLeft(Graphics graphics)
         {
             if (Ruler.Start >= Ruler.Stop)
             {
@@ -397,9 +404,9 @@ namespace TimeAxis
                     if (Tracks[row].IsShow)
                     {
                         lineHeight += Tracks[row].Height;
-                        if (lineHeight > Ruler.Height)
+                        if (lineHeight > Ruler.Height && lineHeight - Tracks[row].Height < this.Height + outBoundary)
                         {
-                            graphics.DrawLine(pen, 0, lineHeight, this.Width, lineHeight);
+                            graphics.DrawLine(pen, 0, lineHeight, SplitLine.Position, lineHeight);
                             float y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height);
                             float y2 = lineHeight;
 
@@ -426,11 +433,50 @@ namespace TimeAxis
                                     new RectangleF(leftPaddingImage, (y2 - y1 - imageSize) / 2 + y1, width, height));
                             }
 
+                            // 隐藏图片
+                            if (Resources.EyeHide != null)
+                            {
+                                int width = Math.Min(imageSize, SplitLine.Position - leftPaddingImage);
+                                float height = Math.Min(imageSize, y2 - y1);
+                                width = width == 0 ? -1 : width;
+                                height = height == 0 ? -1 : height;
+                                graphics.DrawImage(Resources.EyeHide,
+                                    new RectangleF(SplitLine.Position - leftPaddingImage - imageSize, (y2 - y1 - imageSize) / 2 + y1, width, height));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        private void DrawTrackRight(Graphics graphics)
+        {
+            if (Ruler.Start >= Ruler.Stop)
+            {
+                throw new Exception("Start time should be earlier than stop time.");
+            }
+            using (Pen pen = new Pen(BorderColor, BorderWidth))
+            {
+                // 前几行有可能被标尺行等挡住，只有下边不被挡住的才绘制
+                float lineHeight = Ruler.Height + verticalOffset;
+                for (int row = 0; row < Tracks.Count; ++row)
+                {
+                    if (Tracks[row].IsShow)
+                    {
+                        lineHeight += Tracks[row].Height;
+                        if (lineHeight > Ruler.Height && lineHeight - Tracks[row].Height < this.Height + outBoundary)
+                        {
+                            graphics.DrawLine(pen, SplitLine.Position, lineHeight, this.Width, lineHeight);
+                            float y1 = Math.Max(lineHeight - Tracks[row].Height, Ruler.Height - outBoundary);
+                            float y2 = lineHeight;
+                            
                             // 数据段
                             for (int column = 0; column < Tracks[row].Segments.Count; ++column)
                             {
-                                int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
-                                int x2 = LowerTimeToXPosition(Tracks[row].Segments[column].Stop);
+                                int x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width - outBoundary);
+                                int x2 = Math.Min(LowerTimeToXPosition(Tracks[row].Segments[column].Stop), this.Width + outBoundary);
                                 using (Pen segPen = new Pen(Tracks[row].Segments[column].BorderColor, Tracks[row].Segments[column].BorderWidth))
                                 using (Brush brush = new SolidBrush(Tracks[row].Segments[column].Color))
                                 {
@@ -438,6 +484,7 @@ namespace TimeAxis
                                     graphics.DrawRectangle(segPen, x1, y1, x2 - x1, y2 - y1);
                                 }
 
+                                x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
                                 using (Brush brush = new SolidBrush(Tracks[row].Segments[column].FontColor))
                                 using (Font font = new Font(Tracks[row].Segments[column].Font, Tracks[row].Segments[column].FontSize, Tracks[row].Segments[column].FontStyle))
                                 {
@@ -448,17 +495,6 @@ namespace TimeAxis
                                     graphics.DrawString(Tracks[row].Segments[column].Text, font, brush,
                                         new RectangleF(x1 + leftPaddingSegmentName, (y2 - y1 - font.Height) / 2 + y1, width, height));
                                 }
-                            }
-
-                            // 隐藏图片
-                            if (Resources.EyeHide != null)
-                            {
-                                int width = Math.Min(imageSize, SplitLine.Position - leftPaddingImage);
-                                float height = Math.Min(imageSize, y2 - y1);
-                                width = width == 0 ? -1 : width;
-                                height = height == 0 ? -1 : height;
-                                graphics.DrawImage(Resources.EyeHide,
-                                    new RectangleF(SplitLine.Position - leftPaddingImage - imageSize, (y2 - y1 - imageSize) / 2 + y1, width, height));
                             }
                         }
                     }
@@ -518,6 +554,21 @@ namespace TimeAxis
             }
         }
 
+        /// <summary>
+        /// 画右下角一块背景色
+        /// </summary>
+        /// <param name="graphics"></param>
+        private void DrawBackColor2(Graphics graphics)
+        {
+            using (Brush brush = new SolidBrush(BackColorRight))
+            {
+                graphics.FillRectangle(brush, this.Width - vertBar.Thickness, this.Height - horiBar.Thickness, vertBar.Thickness, horiBar.Thickness);
+            }
+        }
+
+        /// <summary>
+        /// 画滚动条控件，独立控件都在最上，无论是否自定义
+        /// </summary>
         private void DrawScrollBar()
         {
             vertBar.Location = new Point(this.Width - vertBar.Thickness, (int) Ruler.Height);
