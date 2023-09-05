@@ -22,6 +22,8 @@ namespace TimeAxisTest
             this.Controls.Add(timeAxisMain);
             timeAxisMain.Dock = DockStyle.Fill;
             timeAxisMain.Ruler.Start = DateTime.Today.AddSeconds(24.5);
+            timeAxisMain.Ruler.IsHideUpper = true;
+            timeAxisMain.Ruler.Height = 35;
             Track t1 = new Track()
             {
                 Height = 40,

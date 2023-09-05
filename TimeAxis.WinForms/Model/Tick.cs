@@ -57,7 +57,7 @@ namespace TimeAxis.Model
         /// <summary>
         /// 上标尺/下标尺
         /// </summary>
-        internal bool IsUpperAlign { get; set; } = true;
+        internal bool IsAtUpperRuler { get; set; } = true;
         
         /// <summary>
         /// 时间转化为X坐标的委托

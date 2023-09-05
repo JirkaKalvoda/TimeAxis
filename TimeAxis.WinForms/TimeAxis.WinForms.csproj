@@ -31,7 +31,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\TimeAxis.WinForms.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup>
+  <DocumentationFile>$(TargetDir)\TimeAxis.WinForms.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />

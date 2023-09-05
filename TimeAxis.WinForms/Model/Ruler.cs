@@ -41,11 +41,20 @@ namespace TimeAxis
 
         public int BoxBorderWidth { get; set; } = 2;
 
+        public bool IsHideUpper { get; set; } = false;
+
         public float UpperHeight
         {
             get
             {
-                return Height / 2;
+                if (IsHideUpper)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return Height / 2;
+                }
             }
         }
 

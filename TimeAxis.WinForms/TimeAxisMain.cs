@@ -62,7 +62,7 @@ namespace TimeAxis
             Ruler.Start = DateTime.Today;
             Ruler.Stop = DateTime.Today.AddDays(1);
             MarkLine.Time = Ruler.DisplayStart;
-            LowerTick.IsUpperAlign = false;
+            LowerTick.IsAtUpperRuler = false;
             UpperTick.TimeToX = UpperTimeToXPosition;
             LowerTick.TimeToX = LowerTimeToXPosition;
             // 滚动条不会被清除
@@ -360,7 +360,7 @@ namespace TimeAxis
                     float y2;
                     if (x <= tick.XStop)
                     {
-                        y1 = tick.IsUpperAlign ? Ruler.UpperHeight : Ruler.Height;
+                        y1 = tick.IsAtUpperRuler ? Ruler.UpperHeight - 1 : Ruler.Height - 1;
                         // 判断小刻度还是大刻度
                         y2 = startDrawTime.TimeOfDay.TotalSeconds % (unit * nextUnit) == 0 ? y1 - tick.LongStickLength : y1 - tick.ShortStickLength;
                         graphics.DrawLine(pen, x, y1, x, y2);
@@ -480,16 +480,19 @@ namespace TimeAxis
             using (Pen pen = new Pen(MarkLine.Color, MarkLine.Width))
             using (Brush brush = new SolidBrush(MarkLine.Color))
             {
-                int x1 = MarkLinePosition;
-                graphics.DrawLine(pen, x1, 0, x1, Ruler.UpperHeight);
-                PointF[] points = new PointF[]
+                if (!Ruler.IsHideUpper)
                 {
-                    new PointF(x1, 7),
-                    new PointF(x1 - 6, 0), 
-                    new PointF(x1 + 5, 0), 
-                };
-                graphics.DrawPolygon(pen, points);
-                graphics.FillPolygon(brush, points);
+                    int x1 = MarkLinePosition;
+                    graphics.DrawLine(pen, x1, 0, x1, Ruler.UpperHeight);
+                    PointF[] points = new PointF[]
+                    {
+                        new PointF(x1, 7),
+                        new PointF(x1 - 6, 0),
+                        new PointF(x1 + 5, 0),
+                    };
+                    graphics.DrawPolygon(pen, points);
+                    graphics.FillPolygon(brush, points);
+                }
 
                 int x2 = LowerTimeToXPosition(MarkLine.Time);
                 if (x2 >= SplitLine.Position + SplitLine.Width)
