@@ -482,6 +482,11 @@ namespace TimeAxis
                                 {
                                     graphics.FillRectangle(brush, x1, y1, x2 - x1, y2 - y1);
                                     graphics.DrawRectangle(segPen, x1, y1, x2 - x1, y2 - y1);
+                                    // 只有1个时刻点的情况
+                                    if (x1 == x2)
+                                    {
+                                        graphics.DrawLine(segPen, x1, y1, x1, y2);
+                                    }
                                 }
 
                                 x1 = Math.Max(LowerTimeToXPosition(Tracks[row].Segments[column].Start), SplitLine.Position + SplitLine.Width);
@@ -1130,7 +1135,7 @@ namespace TimeAxis
             Track track = null;
             Segment segment = null;
 
-            // 点轨道和段
+            // 点轨道、时刻点、段
             if ((e.Button & (MouseButtons.Left | MouseButtons.Right)) > 0 && e.X >= SplitLine.Position + SplitLine.Width && e.Y > Ruler.Height)
             {
                 track = ClickTrack(e.X, e.Y);
@@ -1141,7 +1146,7 @@ namespace TimeAxis
                     data.Track = track;
                     data.Segment = segment;
                     data.Position = e.Location;
-                    if (segment != null)
+                    if (segment != null && segment.Stop > segment.Start)
                     {
                         SegmentMenu.Tag = data;
                         SegmentMenu.Show(MousePosition);

@@ -85,6 +85,12 @@ namespace TimeAxisTest
                 Stop = DateTime.Today.AddHours(9),
                 Text = "Segment1",
             });
+            t5.Segments.Add(new Segment()
+            {
+                Start = DateTime.Today.AddHours(2),
+                Stop = DateTime.Today.AddHours(2),
+                Text = "Segment2",
+            });
             timeAxisMain.Tracks.Add(t1);
             timeAxisMain.Tracks.Add(t2);
             timeAxisMain.Tracks.Add(t3);
