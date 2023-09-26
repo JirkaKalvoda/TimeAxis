@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TimeAxis
 {
-    public class Track : Row
+    public class Track : Row, ICloneable
     {
         public List<Segment> Segments = new List<Segment>();
 
@@ -31,6 +31,11 @@ namespace TimeAxis
         /// </summary>
         public int Id { get; set; }
 
+        /// <summary>
+        /// 对象ID，如果同个对象会创建多行则启用该属性
+        /// </summary>
+        public int ObjectId { get; set; }
+
         public Image Image { get; set; }
 
         public string Font { get; set; } = "Calibri";
@@ -40,5 +45,25 @@ namespace TimeAxis
         public Color FontColor { get; set; } = Color.Black;
 
         public FontStyle FontStyle { get; set; } = FontStyle.Regular;
+
+        public object Clone()
+        {
+            Track output = new Track();
+            output.IsShow = this.IsShow;
+            output.Text = this.Text;
+            output.Name = this.Name;
+            output.Id = this.Id;
+            output.ObjectId = this.ObjectId;
+            output.Image = this.Image;
+            output.Font = this.Font;
+            output.FontColor = this.FontColor;
+            output.FontSize = this.FontSize;
+            output.FontStyle = this.FontStyle;
+            foreach (Segment seg in Segments)
+            {
+                output.Segments.Add(seg.Clone() as Segment);
+            }
+            return output;
+        }
     }
 }

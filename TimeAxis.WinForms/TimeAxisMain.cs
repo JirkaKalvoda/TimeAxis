@@ -42,16 +42,40 @@ namespace TimeAxis
 
         public Tick LowerTick { get; set; } = new Tick();
 
+        /// <summary>
+        /// 标尺左侧右键菜单
+        /// </summary>
         public ContextMenuStrip RulerHeaderMenu { get; set; } = new ContextMenuStrip();
 
+        /// <summary>
+        /// 标尺右侧右键菜单
+        /// </summary>
         public ContextMenuStrip RulerMenu { get; set; } = new ContextMenuStrip();
-        
+
+        /// <summary>
+        /// 轨道左侧右键菜单
+        /// </summary>
         public ContextMenuStrip TrackHeaderMenu { get; set; } = new ContextMenuStrip();
-        
+
+        /// <summary>
+        /// 轨道右侧无数据段区域右键菜单
+        /// </summary>
         public ContextMenuStrip TrackBlankMenu { get; set; } = new ContextMenuStrip();
-        
+
+        /// <summary>
+        /// 轨道右侧数据段右键菜单
+        /// </summary>
         public ContextMenuStrip SegmentMenu { get; set; } = new ContextMenuStrip();
 
+        /// <summary>
+        /// 左侧非标尺非轨道区域右键菜单
+        /// </summary>
+        public ContextMenuStrip BlankHeaderMenu { get; set; } = new ContextMenuStrip();
+
+        /// <summary>
+        /// 右侧非标尺非轨道区域右键菜单
+        /// </summary>
+        public ContextMenuStrip BlankMenu { get; set; } = new ContextMenuStrip();
 
         #endregion
 
@@ -191,12 +215,14 @@ namespace TimeAxis
 
         private ScrollScaleBar vertBar;
         private ScrollScaleBar horiBar;
-        private ToolStripMenuItem tsmi_ResetScale;
+        private ToolStripMenuItem tsmi_ResetScale1;
         private ToolStripMenuItem tsmi_ResetScale2;
-        private ToolStripMenuItem tsmi_SetTime;
+        private ToolStripMenuItem tsmi_SetTime1;
         private ToolStripMenuItem tsmi_SetTime2;
         private ToolStripMenuItem tsmi_SetTime3;
-        private ToolStripMenuItem tsmi_ShowAllTrack;
+        private ToolStripMenuItem tsmi_SetTime4;
+        private ToolStripMenuItem tsmi_ShowAllTrack1;
+        private ToolStripMenuItem tsmi_ShowAllTrack2;
         private ToolStripMenuItem tsmi_SegmentFill;
 
         #region 从分割条到垂直滚动条左边之间的区域，X坐标和时间互相转化
@@ -1151,10 +1177,15 @@ namespace TimeAxis
                         SegmentMenu.Tag = data;
                         SegmentMenu.Show(MousePosition);
                     }
-                    else
+                    else if (track != null)
                     {
                         TrackBlankMenu.Tag = data;
                         TrackBlankMenu.Show(MousePosition);
+                    }
+                    else
+                    {
+                        BlankMenu.Tag = data;
+                        BlankMenu.Show(MousePosition);
                     }
                 }
             }
@@ -1163,8 +1194,16 @@ namespace TimeAxis
             {
                 track = ClickTrack(e.X, e.Y);
                 data.Track = track;
-                TrackHeaderMenu.Tag = data;
-                TrackHeaderMenu.Show(MousePosition);
+                if (track != null)
+                {
+                    TrackHeaderMenu.Tag = data;
+                    TrackHeaderMenu.Show(MousePosition);
+                }
+                else
+                {
+                    BlankHeaderMenu.Tag = data;
+                    BlankHeaderMenu.Show(MousePosition);
+                }
             }
             // 右键标尺
             else if ((e.Button & MouseButtons.Right) > 0 && e.X >= SplitLine.Position + SplitLine.Width && e.Y <= Ruler.Height)
@@ -1229,34 +1268,47 @@ namespace TimeAxis
 
         private void InitRightClickMenu()
         {
-            tsmi_ResetScale = new ToolStripMenuItem("Reset Scale");
+            tsmi_ResetScale1 = new ToolStripMenuItem("Reset Scale");
             tsmi_ResetScale2 = new ToolStripMenuItem("Reset Scale");
-            tsmi_SetTime = new ToolStripMenuItem("Set Time Here");
+            tsmi_SetTime1 = new ToolStripMenuItem("Set Time Here");
             tsmi_SetTime2 = new ToolStripMenuItem("Set Time Here");
             tsmi_SetTime3 = new ToolStripMenuItem("Set Time Here");
-            tsmi_ShowAllTrack = new ToolStripMenuItem("Restore Hidden Items");
+            tsmi_SetTime4 = new ToolStripMenuItem("Set Time Here");
+            tsmi_ShowAllTrack1 = new ToolStripMenuItem("Restore Hidden Items");
+            tsmi_ShowAllTrack2 = new ToolStripMenuItem("Restore Hidden Items");
             tsmi_SegmentFill = new ToolStripMenuItem("Fill");
-            RulerHeaderMenu.Items.Add(tsmi_ResetScale);
-            RulerMenu.Items.Add(tsmi_SetTime);
+            RulerHeaderMenu.Items.Add(tsmi_ResetScale1);
+            RulerMenu.Items.Add(tsmi_SetTime1);
             RulerMenu.Items.Add(tsmi_ResetScale2);
-            TrackHeaderMenu.Items.Add(tsmi_ShowAllTrack);
+            TrackHeaderMenu.Items.Add(tsmi_ShowAllTrack1);
             TrackBlankMenu.Items.Add(tsmi_SetTime2);
             SegmentMenu.Items.Add(tsmi_SetTime3);
             SegmentMenu.Items.Add(tsmi_SegmentFill);
+            BlankMenu.Items.Add(tsmi_SetTime4);
+            BlankHeaderMenu.Items.Add(tsmi_ShowAllTrack2);
             RulerHeaderMenu.Opening += ContextMenuStrip_Opening;
             RulerMenu.Opening += ContextMenuStrip_Opening;
             TrackHeaderMenu.Opening += ContextMenuStrip_Opening;
             TrackBlankMenu.Opening += ContextMenuStrip_Opening;
             SegmentMenu.Opening += ContextMenuStrip_Opening;
-            tsmi_ResetScale.Click += Tsmi_ResetScale_Click;
+            BlankHeaderMenu.Opening += ContextMenuStrip_Opening;
+            BlankMenu.Opening += ContextMenuStrip_Opening;
+            tsmi_ResetScale1.Click += Tsmi_ResetScale_Click;
             tsmi_ResetScale2.Click += Tsmi_ResetScale_Click;
-            tsmi_SetTime.Click += Tsmi_SetTime_Click;
+            tsmi_SetTime1.Click += Tsmi_SetTime_Click;
             tsmi_SetTime2.Click += Tsmi_SetTime_Click;
             tsmi_SetTime3.Click += Tsmi_SetTime_Click;
-            tsmi_ShowAllTrack.Click += Tsmi_ShowAllTrack_Click;
+            tsmi_SetTime4.Click += Tsmi_SetTime_Click;
+            tsmi_ShowAllTrack1.Click += Tsmi_ShowAllTrack_Click;
+            tsmi_ShowAllTrack2.Click += Tsmi_ShowAllTrack_Click;
             tsmi_SegmentFill.Click += Tsmi_SegmentFill_Click;
         }
 
+        /// <summary>
+        /// 先把数据放到右键菜单里，右键菜单打开时给所有项都加上数据引用，这样外部后加的菜单项也能访问数据
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ContextMenuStrip_Opening(object sender, CancelEventArgs e)
         {
             ContextMenuStrip cms = sender as ContextMenuStrip;

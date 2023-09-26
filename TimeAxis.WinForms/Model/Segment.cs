@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TimeAxis
 {
-    public class Segment
+    public class Segment : ICloneable
     {
         public DateTime Start { get; set; }
         
@@ -50,5 +50,25 @@ namespace TimeAxis
         public Color FontColor { get; set; } = Color.Black;
 
         public FontStyle FontStyle { get; set; } = FontStyle.Bold;
+
+        public object Clone()
+        {
+            Segment output = new Segment();
+            output.Start = this.Start;
+            output.Stop = this.Stop;
+            output.DefaultColor = this.DefaultColor;
+            output.BorderColor = this.BorderColor;
+            output.HighLightColor = this.HighLightColor;
+            output.BorderWidth = this.BorderWidth;
+            output.IsSelected = this.IsSelected;
+            output.Text = this.Text;
+            output.Name = this.Name;
+            output.Id = this.Id;
+            output.Font = this.Font;
+            output.FontColor = this.FontColor;
+            output.FontSize = this.FontSize;
+            output.FontStyle = this.FontStyle;
+            return output;
+        }
     }
 }
