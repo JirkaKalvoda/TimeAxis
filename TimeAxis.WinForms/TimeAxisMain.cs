@@ -79,6 +79,8 @@ namespace TimeAxis
 
         #endregion
 
+        public event EventHandler<DateTimeChangedEventArgs> OnMarkTimeChanged;
+
         public TimeAxisMain()
         {
             InitializeComponent();
@@ -892,6 +894,7 @@ namespace TimeAxis
             {
                 MarkLine.Time = LowerXPositionToTime(x);
             }
+            OnMarkTimeChanged?.Invoke(this, new DateTimeChangedEventArgs(MarkLine.Time));
         }
 
 
@@ -1330,6 +1333,7 @@ namespace TimeAxis
             MarkLine.Time = data.Position.Y <= Ruler.UpperHeight ? UpperXPositionToTime(data.Position.X) : LowerXPositionToTime(data.Position.X);
             data.MarkTime = MarkLine.Time;
             Invalidate();
+            OnMarkTimeChanged?.Invoke(this, new DateTimeChangedEventArgs(MarkLine.Time));
         }
 
 

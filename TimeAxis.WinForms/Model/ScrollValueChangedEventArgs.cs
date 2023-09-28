@@ -9,6 +9,7 @@ namespace TimeAxis
     /// <summary>
     /// 滚动条触发事件
     /// </summary>
+    [Obsolete]
     public class ScrollValueChangedEventArgs : EventArgs
     {
         //public double Start { get; set; }

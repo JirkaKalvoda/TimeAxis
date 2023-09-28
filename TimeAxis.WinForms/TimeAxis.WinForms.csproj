@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-  <DocumentationFile>$(TargetDir)\TimeAxis.WinForms.xml</DocumentationFile>
+    <DocumentationFile>$(TargetDir)\TimeAxis.WinForms.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -60,6 +60,7 @@
     </Compile>
     <Compile Include="Enum\MouseState.cs" />
     <Compile Include="Method\DateTimeExt.cs" />
+    <Compile Include="Model\DateTimeChangedEventArgs.cs" />
     <Compile Include="Model\MarkLine.cs" />
     <Compile Include="Model\RightClickData.cs" />
     <Compile Include="Model\Row.cs" />
